@@ -1,20 +1,19 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.FileProviders;
 using VibeShootAdmin.Data;
 using VibeShootAdmin.Models.Entities;
 using VibeShootAdmin.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Where the public VibeShoot site lives (shared database + shared Uploads folder).
+// Where the public VibeShoot site lives (used for links back to it). Both apps share the database,
+// and every image is stored there, so the admin needs no access to the public site's files.
 var site = builder.Configuration.GetSection("Site").Get<SiteOptions>() ?? new SiteOptions();
-site.Resolve(builder.Environment.ContentRootPath);
+site.Resolve();
 builder.Services.AddSingleton(site);
 
 builder.Services.AddControllersWithViews();
-builder.Services.AddScoped<ImageStorage>();
-builder.Services.AddScoped<GalleryImporter>();
+builder.Services.AddScoped<MediaStore>();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -30,11 +29,6 @@ builder.Services.AddAuthentication("VibeShootAdminCookie")
     });
 
 var app = builder.Build();
-
-if (!Directory.Exists(Path.Combine(site.MediaRootFullPath, "Uploads")))
-{
-    app.Logger.LogWarning("Shared media folder not found at {Path}. Set Site:MediaRoot in appsettings.json to the VibeShoot site's wwwroot.", site.MediaRootFullPath);
-}
 
 // The database schema is owned by the public VibeShoot app (it runs the migrations).
 // Here we only make sure there is an admin account to sign in with.
@@ -57,23 +51,27 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// HTTPS is off until the sites have SSL certificates. Set "Https:Enabled": true in appsettings to turn it back on.
+var httpsEnabled = app.Configuration.GetValue<bool>("Https:Enabled");
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
+    if (httpsEnabled) app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+if (httpsEnabled) app.UseHttpsRedirection();
 
-// Serve photos, logos, QR codes and payment screenshots straight from the public site's folder.
-if (Directory.Exists(Path.Combine(site.MediaRootFullPath, "Uploads")))
+// Old-style /Uploads/... image paths (from before images moved into the database) live on the public site.
+app.Use(async (context, next) =>
 {
-    app.UseStaticFiles(new StaticFileOptions
+    if (context.Request.Path.StartsWithSegments("/Uploads"))
     {
-        FileProvider = new PhysicalFileProvider(Path.Combine(site.MediaRootFullPath, "Uploads")),
-        RequestPath = "/Uploads"
-    });
-}
+        context.Response.Redirect(site.PublicUrl(context.Request.Path.Value!));
+        return;
+    }
+    await next();
+});
 
 app.UseRouting();
 app.UseAuthentication();

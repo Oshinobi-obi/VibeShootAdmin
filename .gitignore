@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# Production settings (contain the hosting database password)
+VibeShootAdmin/appsettings.Production.json

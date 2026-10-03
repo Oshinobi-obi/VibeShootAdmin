@@ -16,6 +16,7 @@ namespace VibeShootAdmin.Data
         public DbSet<GalleryImage> GalleryImages { get; set; }
         public DbSet<Admin> Admins { get; set; }
         public DbSet<BlockedDate> BlockedDates { get; set; }
+        public DbSet<MediaFile> MediaFiles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -58,6 +59,13 @@ namespace VibeShootAdmin.Data
                 e.HasIndex(g => new { g.PhotographerId, g.Category });
                 e.HasIndex(g => g.FilePath).IsUnique();
                 e.HasOne(g => g.Photographer).WithMany(p => p.GalleryImages).HasForeignKey(g => g.PhotographerId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<MediaFile>(e =>
+            {
+                e.Property(m => m.Data).HasColumnType("longblob");
+                e.HasIndex(m => m.SourcePath);
+                e.Ignore(m => m.Url);
             });
 
             modelBuilder.Entity<BlockedDate>(e =>

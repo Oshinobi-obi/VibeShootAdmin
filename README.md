@@ -3,28 +3,21 @@
 Admin console for **[VibeShoot](https://github.com/Oshinobi-obi/VibeShoot)**: schedules, bookings, GCash payment verification,
 receipts and gallery management. ASP.NET Core MVC (.NET 10) + MySQL (Pomelo EF Core).
 
-It shares two things with the public VibeShoot site:
-- **The database** (`VibeShootStudio`). The VibeShoot site owns the schema and runs the migrations, so start it once first.
-- **The media folder.** Photos, logos, GCash QR codes and client payment screenshots live in the VibeShoot site's
-  `wwwroot/Uploads`. The admin reads them from there and saves uploads into it.
+It shares the **database** (`VibeShootStudio`) with the public VibeShoot site. The VibeShoot site owns the schema
+and runs the migrations, so start it once first. All images, including photos, logos, GCash QR codes and client
+payment screenshots, are stored in that database (`MediaFiles` table), so the two apps can run on different hosts.
 
 ## Getting started
 
-1. Clone this repo next to the VibeShoot repo:
-   ```
-   source/repos/VibeShoot
-   source/repos/VibeShootAdmin
-   ```
-2. Run the VibeShoot site once so the database exists.
-3. Check `VibeShootAdmin/appsettings.json`:
+1. Run the VibeShoot site once so the database exists.
+2. Check `VibeShootAdmin/appsettings.json`:
    - `ConnectionStrings:DefaultConnection`: the same MySQL database as the VibeShoot site
-   - `Site:MediaRoot`: path to the VibeShoot site's `wwwroot` (default `../../VibeShoot/VibeShoot/wwwroot`)
    - `Site:PublicSiteUrl`: where the public site runs (used for "View public site" links)
-4. Run it:
+3. Run it:
    ```
    dotnet run --project VibeShootAdmin --launch-profile http
    ```
-5. Open http://localhost:5018 and sign in with **admin / Admin123!** (created on first start; change it under
+4. Open http://localhost:5018 and sign in with **admin / Admin123!** (created on first start; change it under
    *Settings → Change your password*).
 
 ## Pages

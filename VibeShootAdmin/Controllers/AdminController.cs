@@ -26,12 +26,12 @@ namespace VibeShootAdmin.Controllers
         private const int PageSize = 15;
 
         private readonly ApplicationDbContext _context;
-        private readonly ImageStorage _storage;
+        private readonly MediaStore _media;
 
-        public AdminController(ApplicationDbContext context, ImageStorage storage)
+        public AdminController(ApplicationDbContext context, MediaStore media)
         {
             _context = context;
-            _storage = storage;
+            _media = media;
         }
 
         /// <summary>Data every admin page needs: sidebar badges and the photographer switcher.</summary>
@@ -577,22 +577,22 @@ namespace VibeShootAdmin.Controllers
 
             foreach (var file in files ?? new List<Microsoft.AspNetCore.Http.IFormFile>())
             {
-                var error = ImageStorage.Validate(file);
-                if (error != null) { errors.Add($"{file.FileName}: {error}"); continue; }
+                var error = MediaStore.Validate(file);
+                var url = error == null ? await _media.AddAsync(file, MediaKind.Gallery) : null;
+                if (url == null) { errors.Add($"{file.FileName}: {error ?? "not a JPG, PNG or WEBP image."}"); continue; }
 
-                var folder = $"Uploads/Album/{(string.IsNullOrEmpty(photog.MediaFolder) ? photog.Slug : photog.MediaFolder)}/{category}";
-                var path = await _storage.SaveAsync(file, folder, System.IO.Path.GetFileNameWithoutExtension(file.FileName));
                 _context.GalleryImages.Add(new GalleryImage
                 {
                     PhotographerId = photographerId,
                     Category = category,
-                    FilePath = path,
+                    FilePath = url,
                     FileSizeBytes = file.Length,
                     SortOrder = ++order,
                 });
+                // One photo per save keeps each statement well under MySQL's max_allowed_packet.
+                await _context.SaveChangesAsync();
                 saved++;
             }
-            await _context.SaveChangesAsync();
 
             if (saved > 0) TempData["Toast"] = $"{saved} photo{(saved == 1 ? "" : "s")} added to {category}.";
             if (errors.Count > 0) TempData["ToastError"] = string.Join(" ", errors);
@@ -608,7 +608,7 @@ namespace VibeShootAdmin.Controllers
 
             _context.GalleryImages.Remove(image);
             await _context.SaveChangesAsync();
-            _storage.Delete(image.FilePath);
+            await _media.DeleteAsync(image.FilePath);
 
             TempData["Toast"] = "Photo deleted.";
             return RedirectToAction(nameof(Gallery), new { photographerId = image.PhotographerId, category = Request.Query["category"].ToString() });
@@ -624,16 +624,6 @@ namespace VibeShootAdmin.Controllers
             image.IsFeatured = !image.IsFeatured;
             await _context.SaveChangesAsync();
             return Ok(new { featured = image.IsFeatured });
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RescanGallery([FromServices] GalleryImporter importer)
-        {
-            if (!User.IsSuperAdmin()) return Forbid();
-            var added = await importer.ImportAsync();
-            TempData["Toast"] = added == 0 ? "Gallery is already in sync with the Uploads folder." : $"Imported {added} new photo(s) from the Uploads folder.";
-            return RedirectToAction(nameof(Gallery));
         }
 
         // ------------------------------------------------------------------ Studio settings
@@ -685,21 +675,22 @@ namespace VibeShootAdmin.Controllers
             p.XUrl = form.XUrl?.Trim();
             if (User.IsSuperAdmin()) p.IsActive = form.IsActive;
 
-            var folder = string.IsNullOrEmpty(p.MediaFolder) ? p.Slug : p.MediaFolder;
+            var replaced = new List<string?>();
             if (form.Logo != null)
             {
-                var err = ImageStorage.Validate(form.Logo);
-                if (err == null) p.LogoPath = await _storage.SaveAsync(form.Logo, $"Uploads/Logos/{folder}", folder);
-                else TempData["ToastError"] = "Logo: " + err;
+                var url = MediaStore.Validate(form.Logo) == null ? await _media.AddAsync(form.Logo, MediaKind.Logo) : null;
+                if (url != null) { replaced.Add(p.LogoPath); p.LogoPath = url; }
+                else TempData["ToastError"] = "Logo: " + (MediaStore.Validate(form.Logo) ?? "please upload a JPG, PNG or WEBP image.");
             }
             if (form.GCashQr != null)
             {
-                var err = ImageStorage.Validate(form.GCashQr);
-                if (err == null) p.GCashQrPath = await _storage.SaveAsync(form.GCashQr, $"Uploads/QRCodes/{folder}", folder + "GCash");
-                else TempData["ToastError"] = "GCash QR: " + err;
+                var url = MediaStore.Validate(form.GCashQr) == null ? await _media.AddAsync(form.GCashQr, MediaKind.QrCode) : null;
+                if (url != null) { replaced.Add(p.GCashQrPath); p.GCashQrPath = url; }
+                else TempData["ToastError"] = "GCash QR: " + (MediaStore.Validate(form.GCashQr) ?? "please upload a JPG, PNG or WEBP image.");
             }
 
             await _context.SaveChangesAsync();
+            foreach (var old in replaced) await _media.DeleteAsync(old);
             TempData["Toast"] = "Studio profile saved.";
             return RedirectToAction(nameof(Studio), new { photographerId = form.Id });
         }

@@ -10,15 +10,6 @@
     string Tab(string? c) => $"?photographerId={Model.PhotographerId}" + (c == null ? "" : "&category=" + c);
 }
 
-@section TopActions {
-    @if (ViewBag.IsSuperAdmin == true)
-    {
-        <form class="inline-form" method="post" asp-action="RescanGallery" title="Import photos copied into wwwroot/Uploads/Album">
-            <button class="btn" type="submit">Sync from Uploads folder</button>
-        </form>
-    }
-}
-
 <section class="grid grid-3-1">
     <div class="card">
         <div class="tabs" style="margin-bottom:18px;">
@@ -51,7 +42,7 @@
     </div>
 
     <div class="card" style="align-self:start;">
-        <div class="card-head"><div><h2>Upload photos</h2><p>JPG, PNG or WEBP · up to 10 MB each</p></div></div>
+        <div class="card-head"><div><h2>Upload photos</h2><p>JPG, PNG or WEBP · large photos are resized automatically</p></div></div>
         <form method="post" asp-action="UploadGallery" enctype="multipart/form-data" id="uploadForm">
             <input type="hidden" name="photographerId" value="@Model.PhotographerId" />
             <div class="form-row">
@@ -67,7 +58,7 @@
                 <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0-4 4m4-4 4 4M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
                 <b>Drop photos here</b>
                 <span class="hint">or click to browse</span>
-                <input type="file" name="files" id="files" accept="image/jpeg,image/png,image/webp" multiple />
+                <input type="file" name="files" id="files" accept="image/jpeg,image/png,image/webp" multiple data-shrink data-shrink-max="2048" data-shrink-quality="0.85" />
                 <div class="dz-previews" id="dzPreviews"></div>
             </label>
             <button class="btn btn-gold btn-block" type="submit" style="margin-top:14px;" id="uploadBtn" disabled><svg><use href="#i-plus" /></svg>Upload</button>
