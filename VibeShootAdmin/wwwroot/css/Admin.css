@@ -484,3 +484,29 @@ html, body, * {
         width: 0;
         height: 0;
     }
+
+/* ---------- Live alerts ---------- */
+.adm-bell { position: relative; color: var(--text-3); }
+.adm-bell i { position: absolute; top: 7px; right: 8px; width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); display: none; }
+.adm-bell.on { color: var(--gold-2); border-color: rgba(201,162,39,0.45); }
+.adm-bell.on i { display: block; background: var(--green); box-shadow: 0 0 0 0 rgba(62,207,142,0.6); animation: bell-pulse 2.4s ease-out infinite; }
+.adm-bell.ring svg { animation: bell-ring .9s ease; transform-origin: 50% 10%; }
+@keyframes bell-pulse { 0% { box-shadow: 0 0 0 0 rgba(62,207,142,0.55); } 100% { box-shadow: 0 0 0 8px rgba(62,207,142,0); } }
+@keyframes bell-ring { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(16deg); } 40% { transform: rotate(-14deg); } 60% { transform: rotate(9deg); } 80% { transform: rotate(-5deg); } }
+
+.adm-alerts-prompt {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 18px; padding: 16px 18px;
+    border-radius: var(--radius); border: 1px solid rgba(201,162,39,0.35);
+    background: linear-gradient(120deg, rgba(201,162,39,0.12), var(--surface) 60%);
+    animation: adm-in .4s ease both;
+}
+.adm-alerts-prompt[hidden] { display: none; }
+.adm-alerts-prompt b { display: block; font-weight: 600; }
+.adm-alerts-prompt p { margin: 2px 0 0; color: var(--text-2); font-size: 0.84rem; }
+.adm-alerts-prompt > div:nth-child(2) { flex: 1; }
+.adm-alerts-prompt-icon { width: 42px; height: 42px; border-radius: 12px; background: var(--gold-soft); color: var(--gold-2); display: grid; place-items: center; flex: none; }
+.adm-alerts-prompt-actions { display: flex; gap: 8px; flex: none; }
+@media (max-width: 700px) {
+    .adm-alerts-prompt { flex-wrap: wrap; }
+    .adm-alerts-prompt-actions { width: 100%; justify-content: flex-end; }
+}

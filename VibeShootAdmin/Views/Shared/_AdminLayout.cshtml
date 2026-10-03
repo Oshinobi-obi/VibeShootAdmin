@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="~/css/Admin.css" asp-append-version="true" />
     @await RenderSectionAsync("Head", required: false)
 </head>
-<body class="adm">
+<body class="adm" data-sound="@TempData["Sound"]">
     <svg width="0" height="0" style="position:absolute" aria-hidden="true">
         <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /></symbol>
         <symbol id="i-cal" viewBox="0 0 24 24"><path d="M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm-1 5h16M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></symbol>
@@ -41,6 +41,7 @@
         <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></symbol>
         <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z" fill="currentColor" /></symbol>
         <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></symbol>
+        <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></symbol>
         <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></symbol>
     </svg>
 
@@ -104,10 +105,22 @@
                     </label>
                 }
                 @await RenderSectionAsync("TopActions", required: false)
+                <button type="button" class="adm-icon-btn adm-bell" id="alertsBell" title="Sound &amp; desktop alerts" aria-label="Sound and desktop alerts"><svg><use href="#i-bell" /></svg><i></i></button>
             </div>
         </header>
 
         <div class="adm-content">
+            <div class="adm-alerts-prompt" id="alertsPrompt" hidden>
+                <span class="adm-alerts-prompt-icon"><svg><use href="#i-bell" /></svg></span>
+                <div>
+                    <b>Turn on booking alerts?</b>
+                    <p>Hear a sound and get a desktop notification when a client books or sends a GCash payment, so you can verify it right away. Keep this tab open.</p>
+                </div>
+                <div class="adm-alerts-prompt-actions">
+                    <button type="button" class="btn btn-ghost" id="alertsLater">Not now</button>
+                    <button type="button" class="btn btn-gold" id="alertsEnable">Enable alerts</button>
+                </div>
+            </div>
             @RenderBody()
         </div>
     </main>

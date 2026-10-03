@@ -179,6 +179,52 @@ namespace VibeShootAdmin.Controllers
             return View("~/Views/Admin/Dashboard.cshtml", model);
         }
 
+        // ------------------------------------------------------------------ Live alerts
+
+        /// <summary>
+        /// New booking requests and GCash payments since <paramref name="since"/> (UTC ticks), for the
+        /// signed-in admin's own photographer only. Polled by the browser to play sounds and show notifications.
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> AlertsFeed(long? since)
+        {
+            var pid = User.ScopedPhotographerId();
+            var now = DateTime.UtcNow;
+            Response.Headers.CacheControl = "no-store";
+
+            object Counts() => new
+            {
+                pendingBookings = ViewBag.PendingBookingCount,
+                pendingPayments = ViewBag.PendingPaymentCount,
+            };
+
+            // First call just sets the starting point, so opening the console doesn't replay old items.
+            if (since == null || since <= 0)
+                return Json(new { now = now.Ticks, bookings = Array.Empty<object>(), payments = Array.Empty<object>(), counts = Counts() });
+
+            var from = new DateTime(Math.Max(since.Value, now.AddDays(-1).Ticks), DateTimeKind.Utc);
+
+            var bookings = await _context.Bookings.ForPhotographer(pid)
+                .Where(b => b.CreatedAt > from && b.CreatedAt <= now)
+                .OrderBy(b => b.CreatedAt)
+                .Select(b => new { id = b.TransactionId, client = b.ClientName, date = b.TargetDate, category = b.Category })
+                .Take(20).ToListAsync();
+
+            var payments = await _context.Payments.ForPhotographer(pid)
+                .Where(p => p.CreatedAt > from && p.CreatedAt <= now && p.Status == PaymentStatus.ForVerification)
+                .OrderBy(p => p.CreatedAt)
+                .Select(p => new { id = p.Id, booking = p.BookingTransactionId, client = p.Booking!.ClientName, amount = p.Amount, type = p.Type })
+                .Take(20).ToListAsync();
+
+            return Json(new
+            {
+                now = now.Ticks,
+                bookings = bookings.Select(b => new { b.id, b.client, date = b.date.ToString("MMM d"), b.category }),
+                payments = payments.Select(p => new { p.id, p.booking, p.client, amount = Ui.Peso(p.amount), p.type }),
+                counts = Counts(),
+            });
+        }
+
         // ------------------------------------------------------------------ Schedule
 
         [HttpGet]
@@ -317,6 +363,7 @@ namespace VibeShootAdmin.Controllers
             await _context.SaveChangesAsync();
 
             TempData["Toast"] = $"Booking {booking.TransactionId} marked as {status}.";
+            if (status is BookingStatus.Declined or BookingStatus.Cancelled) TempData["Sound"] = "booking-cancelled";
             return LocalRedirect(returnUrl ?? Url.Action(nameof(BookingDetails), new { id = transactionId })!);
         }
 
@@ -378,6 +425,7 @@ namespace VibeShootAdmin.Controllers
             await _context.SaveChangesAsync();
 
             TempData["Toast"] = $"Payment {payment.ReceiptNumber} verified (₱{payment.Amount:N2}).";
+            TempData["Sound"] = "payment-verified";
             return LocalRedirect(returnUrl ?? Url.Action(nameof(Transactions))!);
         }
 

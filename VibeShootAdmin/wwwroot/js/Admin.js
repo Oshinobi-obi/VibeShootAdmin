@@ -96,3 +96,139 @@
         rejectDialog.querySelector('[data-cancel]').addEventListener('click', function () { rejectDialog.close(); });
     }
 })();
+
+// =====================================================================
+// Live alerts: sound + desktop notification for new bookings and GCash
+// payments (only the signed-in admin's own photographer).
+// =====================================================================
+(function () {
+    'use strict';
+
+    var KEY = 'vs-alerts';            // 'on' | 'off' (absent = not decided yet)
+    var SEEN = 'vs-alerts-seen';      // ids already announced (shared by all open tabs)
+    var POLL_MS = 30000;
+
+    var bell = document.getElementById('alertsBell');
+    var prompt = document.getElementById('alertsPrompt');
+    if (!bell) return;
+
+    function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+    function set(k, v) { try { localStorage.setItem(k, v); } catch (e) { } }
+    function isOn() { return get(KEY) === 'on'; }
+
+    // Browsers only allow sound after a click on the page; if blocked, play on the next click.
+    function sound(name) {
+        var audio = new Audio('/audio/' + name + '.mp3');
+        var p = audio.play();
+        if (p && p.catch) p.catch(function () {
+            var retry = function () { audio.play().catch(function () { }); window.removeEventListener('pointerdown', retry, true); };
+            window.addEventListener('pointerdown', retry, true);
+        });
+    }
+
+    function notify(title, body, url) {
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        try {
+            var n = new Notification(title, { body: body, icon: '/favicon.svg', tag: url });
+            n.onclick = function () { window.focus(); window.location.href = url; n.close(); };
+        } catch (e) { }
+    }
+
+    function render() {
+        bell.classList.toggle('on', isOn());
+        bell.title = isOn() ? 'Alerts are on (click to turn off)' : 'Turn on sound & desktop alerts';
+        if (prompt) prompt.hidden = get(KEY) !== null || sessionStorage.getItem('vs-alerts-later') === '1';
+    }
+
+    function enable() {
+        set(KEY, 'on');
+        var ask = ('Notification' in window && Notification.permission === 'default') ? Notification.requestPermission() : Promise.resolve();
+        ask.then(function () {
+            sound('alerts-enabled');
+            var blocked = 'Notification' in window && Notification.permission === 'denied';
+            window.vsToast(blocked
+                ? 'Sound alerts on. Desktop notifications are blocked in your browser settings.'
+                : 'Alerts on. You will hear new bookings and payments while this tab is open.');
+            render();
+            startPolling();
+        });
+    }
+
+    bell.addEventListener('click', function () {
+        if (isOn()) { set(KEY, 'off'); render(); window.vsToast('Alerts turned off.'); }
+        else enable();
+    });
+    if (prompt) {
+        document.getElementById('alertsEnable').addEventListener('click', enable);
+        document.getElementById('alertsLater').addEventListener('click', function () {
+            sessionStorage.setItem('vs-alerts-later', '1');
+            render();
+        });
+    }
+
+    // Feedback sound for the action just taken (verify / decline / cancel).
+    var cue = document.body.getAttribute('data-sound');
+    if (cue && isOn()) sound(cue);
+
+    // ------------------------------------------------------------ Polling
+    var since = null, timer = null;
+
+    function seen() { try { return JSON.parse(get(SEEN) || '[]'); } catch (e) { return []; } }
+    function markSeen(id) {
+        var list = seen();
+        if (list.indexOf(id) >= 0) return false;
+        list.push(id);
+        set(SEEN, JSON.stringify(list.slice(-200)));
+        return true;
+    }
+
+    function setBadge(href, count, gold) {
+        var link = document.querySelector('.adm-nav a[href$="' + href + '"]');
+        if (!link) return;
+        var badge = link.querySelector('.adm-badge');
+        if (!count) { if (badge) badge.remove(); return; }
+        if (!badge) { badge = document.createElement('span'); badge.className = 'adm-badge' + (gold ? ' gold' : ''); link.appendChild(badge); }
+        badge.textContent = count;
+    }
+
+    function poll() {
+        if (!isOn()) return;
+        fetch('/Admin/AlertsFeed' + (since ? '?since=' + since : ''), { cache: 'no-store', credentials: 'same-origin' })
+            .then(function (r) { return r.ok && r.headers.get('content-type').indexOf('json') >= 0 ? r.json() : null; })
+            .then(function (data) {
+                if (!data) return;
+                since = data.now;
+                setBadge('/Admin/Bookings', data.counts.pendingBookings, false);
+                setBadge('/Admin/Transactions', data.counts.pendingPayments, true);
+
+                var newBookings = data.bookings.filter(function (b) { return markSeen('b:' + b.id); });
+                var newPayments = data.payments.filter(function (p) { return markSeen('p:' + p.id); });
+
+                newBookings.forEach(function (b) {
+                    notify('New booking request', b.client + ' - ' + b.category + ' on ' + b.date, '/Admin/BookingDetails/' + encodeURIComponent(b.id));
+                    window.vsToast('New booking: ' + b.client + ' (' + b.category + ', ' + b.date + ')');
+                });
+                newPayments.forEach(function (p) {
+                    notify('New GCash payment to verify', p.client + ' - ' + p.amount + ' (' + p.type + ')', '/Admin/BookingDetails/' + encodeURIComponent(p.booking));
+                    window.vsToast('Payment to verify: ' + p.client + ' - ' + p.amount);
+                });
+
+                // One sound per check: a payment needs action, so it wins over a booking.
+                if (newPayments.length) sound('new-payment');
+                else if (newBookings.length) sound('new-booking');
+                if (newPayments.length || newBookings.length) {
+                    bell.classList.remove('ring'); void bell.offsetWidth; bell.classList.add('ring');
+                }
+            })
+            .catch(function () { });
+    }
+
+    function startPolling() {
+        if (timer) return;
+        poll();
+        timer = setInterval(poll, POLL_MS);
+    }
+
+    render();
+    if (isOn()) startPolling();
+})();
