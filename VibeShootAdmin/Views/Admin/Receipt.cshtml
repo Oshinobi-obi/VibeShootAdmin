@@ -1,0 +1,198 @@
+@model VibeShootAdmin.Models.ReceiptViewModel
+@using VibeShootAdmin.Models.Entities
+@{
+    Layout = null;
+    var b = Model.Booking;
+    var p = Model.Payment;
+    var isOfficial = p != null;
+    var docType = isOfficial ? "Official Receipt" : "Booking Statement";
+    var docNo = isOfficial ? p!.ReceiptNumber : b.TransactionId;
+    var docDate = isOfficial ? Ui.Stamp(p!.VerifiedAt ?? p.CreatedAt) : Ui.Stamp(b.CreatedAt);
+    var visiblePayments = b.Payments.ToList();
+    var fileName = $"VibeShoot-{docNo}.pdf";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>@docType @docNo · VibeShoot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/Receipt.css" asp-append-version="true" />
+</head>
+<body class="rc">
+    <div class="rc-toolbar">
+            <a class="back" href="@Url.Action("BookingDetails", "Admin", new { id = b.TransactionId })">&larr; Back to booking</a>
+        <div class="group">
+            <button class="rc-btn" id="btnPdf" type="button">
+                <svg viewBox="0 0 24 24"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>Download PDF
+            </button>
+            <button class="rc-btn gold" type="button" onclick="window.print()">
+                <svg viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 18H5a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2M7 14h10v7H7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /></svg>Print
+            </button>
+        </div>
+    </div>
+
+    <article class="paper" id="receiptPaper">
+        <span class="wm">VIBESHOOT</span>
+
+        @if (isOfficial && p!.Status == PaymentStatus.Verified)
+        {
+            <span class="rc-paid-stamp">PAID</span>
+        }
+
+        <header class="rc-head">
+            <div class="rc-brand">
+                @if (!string.IsNullOrEmpty(b.Photographer?.LogoPath))
+                {
+                    <img src="@b.Photographer.LogoPath" alt="" />
+                }
+                <div>
+                    <b>VIBESHOOT</b>
+                    <small>@b.Photographer?.Name</small>
+                </div>
+            </div>
+            <div class="rc-doc">
+                <div class="type">@docType</div>
+                <div class="no">@docNo</div>
+                <div class="date">@docDate</div>
+                @if (isOfficial)
+                {
+                    <span class="rc-status st-@Ui.Slug(p!.Status)">@p.Status</span>
+                }
+                else
+                {
+                    <span class="rc-status st-@Ui.Slug(b.Status)">Booking @b.Status</span>
+                }
+            </div>
+        </header>
+
+        <section class="rc-cols">
+            <div>
+                <div class="rc-label">Billed to</div>
+                <p><b>@b.ClientName</b></p>
+                <p>@b.ContactNumber</p>
+                @if (!string.IsNullOrWhiteSpace(b.Email)) { <p>@b.Email</p> }
+                <p style="color:var(--ink-3);font-size:0.8rem;">Transaction ID: <span style="font-family:ui-monospace,Consolas,monospace;">@b.TransactionId</span></p>
+            </div>
+            <div>
+                <div class="rc-label">Session</div>
+                <p><b>@b.TargetDate.ToString("dddd, MMMM d, yyyy")</b></p>
+                <p>@b.TimeRange</p>
+                <p>@b.Venue</p>
+                <p style="color:var(--ink-3);font-size:0.8rem;">@b.Category · @b.PackageName</p>
+            </div>
+        </section>
+
+        @if (isOfficial)
+        {
+            <table class="rc-table">
+                <thead><tr><th>Description</th><th>Method</th><th>Reference</th><th class="r">Amount</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td>@p!.Type — @b.Category, @b.PackageName<br /><small>Session on @b.TargetDate.ToString("MMM d, yyyy")</small></td>
+                        <td>@p.Method</td>
+                        <td class="mono">@(p.ReferenceNumber ?? "—")</td>
+                        <td class="r"><b>@Ui.Peso(p.Amount)</b></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="rc-totals">
+                <div><span>Package price</span><span>@Ui.Peso(b.TotalPrice)</span></div>
+                <div><span>Total paid to date</span><span>@Ui.Peso(b.AmountPaid)</span></div>
+                <div><span>Remaining balance</span><span>@Ui.Peso(b.Balance)</span></div>
+                <div class="grand"><span>Amount received</span><span>@Ui.Peso(p.Amount)</span></div>
+            </div>
+        }
+        else
+        {
+            <table class="rc-table">
+                <thead><tr><th>Payment</th><th>Reference</th><th>Status</th><th class="r">Amount</th></tr></thead>
+                <tbody>
+                    @if (!visiblePayments.Any())
+                    {
+                        <tr><td colspan="4" style="color:var(--ink-3);">@(b.TotalPrice > 0 ? "No payments recorded yet." : "Custom package — the photographer will send you a quotation.")</td></tr>
+                    }
+                    @foreach (var pay in visiblePayments)
+                    {
+                        <tr>
+                            <td>@pay.Type<br /><small><span class="mono">@pay.ReceiptNumber</span> · @Ui.Stamp(pay.CreatedAt)</small></td>
+                            <td class="mono">@pay.Method @(pay.ReferenceNumber != null ? "· " + pay.ReferenceNumber : "")</td>
+                            <td>
+                                <span class="rc-status st-@Ui.Slug(pay.Status)" style="margin:0;">@pay.Status</span>
+                                @if (pay.Status == PaymentStatus.Rejected && !string.IsNullOrEmpty(pay.Remarks)) { <br /><small>@pay.Remarks</small> }
+                            </td>
+                            <td class="r">@Ui.Peso(pay.Amount)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="rc-totals">
+                <div><span>Package price</span><span>@(b.TotalPrice > 0 ? Ui.Peso(b.TotalPrice) : "Custom")</span></div>
+                <div><span>Required down payment (50%)</span><span>@Ui.Peso(b.DownPaymentRequired)</span></div>
+                <div><span>Verified payments</span><span>− @Ui.Peso(b.AmountPaid)</span></div>
+                @if (b.AmountForVerification > 0)
+                {
+                    <div><span>Being verified</span><span>@Ui.Peso(b.AmountForVerification)</span></div>
+                }
+                <div class="grand"><span>Balance due</span><span>@Ui.Peso(b.Balance)</span></div>
+            </div>
+
+            <div class="rc-note">
+                @switch (b.Status)
+                {
+                    case BookingStatus.Pending:
+                        <b>What happens next?</b> <span>The photographer will verify your GCash payment and confirm your slot. Keep your Transaction ID — you can check the status anytime at <i>Track Booking</i>.</span>
+                        break;
+                    case BookingStatus.Confirmed:
+                        <b>You're booked!</b> <span>Your session is confirmed. The remaining balance is due on or before the event day (GCash or cash).</span>
+                        break;
+                    case BookingStatus.Completed:
+                        <b>Thank you!</b> <span>This session is complete. We hope you love your photos.</span>
+                        break;
+                    default:
+                        <b>This booking was @b.Status.ToLowerInvariant().</b> <span>Please contact the photographer for details.</span>
+                        break;
+                }
+                @if (!string.IsNullOrWhiteSpace(b.AdminRemarks))
+                {
+                    <br /><b>Note from the photographer:</b> <span>@b.AdminRemarks</span>
+                }
+            </div>
+        }
+
+        @if (isOfficial)
+        {
+            <div class="rc-sign"><div>Received by: @(p!.VerifiedBy ?? b.Photographer?.Name)</div></div>
+        }
+
+        <footer class="rc-foot">
+            <span>Down payment is non-refundable if the client cancels. Additional hours: ₱500 (photo) / ₱1,000 (with video) per hour.</span>
+            <span>Generated @Ui.Stamp(DateTime.UtcNow)</span>
+        </footer>
+    </article>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+        document.getElementById('btnPdf').addEventListener('click', function () {
+            var btn = this;
+            if (!window.html2pdf) { window.print(); return; }
+            btn.disabled = true;
+            html2pdf().set({
+                margin: 8,
+                filename: '@fileName',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(document.getElementById('receiptPaper')).save().then(function () { btn.disabled = false; });
+        });
+        @if (Context.Request.Query["print"] == "1")
+        {
+            <text>window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 400); });</text>
+        }
+    </script>
+</body>
+</html>

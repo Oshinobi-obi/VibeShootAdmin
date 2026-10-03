@@ -1,0 +1,163 @@
+@model VibeShootAdmin.Models.Admin.StudioViewModel
+@using VibeShootAdmin.Models.Entities
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Settings";
+    ViewData["Nav"] = "Studio";
+    ViewData["Subtitle"] = "Studio profile, GCash QR, packages and accounts";
+    ViewData["SwitcherRequired"] = true;
+    var p = Model.Photographer;
+    var isSuper = ViewBag.IsSuperAdmin == true;
+    var photographers = ViewBag.Photographers as List<VibeShootAdmin.Models.Admin.PhotographerOption> ?? new();
+}
+
+<section class="grid grid-1-2">
+    <div class="stack">
+        <div class="card">
+            <div class="studio-head" style="margin-bottom:18px;">
+                <span class="studio-logo">@if (!string.IsNullOrEmpty(p.LogoPath)) { <img src="@p.LogoPath" alt="" id="logoPreview" /> }</span>
+                <div>
+                    <h2 style="font-family:'Anton',sans-serif;font-weight:400;font-size:1.5rem;letter-spacing:.03em;">@p.Name</h2>
+                    <a class="hint" href="@Site.PublicUrl($"/photographer/{p.Slug}/about")" target="_blank" rel="noopener">/photographer/@p.Slug</a>
+                </div>
+            </div>
+
+            <div class="card-head"><div><h2>GCash payment QR</h2><p>Shown to clients when they pay the down payment and balance</p></div></div>
+            <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+                @if (!string.IsNullOrEmpty(p.GCashQrPath))
+                {
+                    <div class="qr-box"><img src="@p.GCashQrPath" alt="GCash QR" id="qrPreview" /></div>
+                }
+                else
+                {
+                    <div class="qr-missing" id="qrMissing">No QR uploaded — clients can't pay online until you add one.</div>
+                }
+                <div class="hint" style="flex:1;min-width:160px;">
+                    <b style="color:var(--text);display:block;">@(p.GCashAccountName ?? "Account name not set")</b>
+                    @(p.GCashNumber ?? "")
+                    <p style="margin-top:8px;">Upload a new QR in the profile form to replace it.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-head"><div><h2>Change your password</h2><p>Signed in as @ViewBag.AdminName</p></div></div>
+            <form method="post" asp-action="ChangePassword">
+                <div class="form-row"><label for="cp">Current password</label><input class="adm-input" id="cp" type="password" name="currentPassword" required autocomplete="current-password" /></div>
+                <div class="form-grid">
+                    <div class="form-row"><label for="np">New password</label><input class="adm-input" id="np" type="password" name="newPassword" minlength="8" required autocomplete="new-password" /></div>
+                    <div class="form-row"><label for="np2">Confirm</label><input class="adm-input" id="np2" type="password" name="confirmPassword" minlength="8" required autocomplete="new-password" /></div>
+                </div>
+                <button class="btn" type="submit">Update password</button>
+            </form>
+        </div>
+
+        @if (isSuper)
+        {
+            <div class="card">
+                <div class="card-head"><div><h2>Admin accounts</h2><p>Photographer accounts only see their own bookings</p></div></div>
+                <div class="list" style="margin-bottom:14px;">
+                    @foreach (var a in Model.Accounts)
+                    {
+                        <div class="list-item">
+                            <span class="adm-avatar">@a.Username[..1].ToUpperInvariant()</span>
+                            <span class="meta"><b>@a.Username</b><small>@(a.Role == AdminRoles.SuperAdmin ? "Super Admin · all photographers" : $"Photographer · {a.Photographer?.Name}")</small></span>
+                        </div>
+                    }
+                </div>
+                <details>
+                    <summary class="btn btn-sm"><svg><use href="#i-plus" /></svg>New account</summary>
+                    <form method="post" asp-action="CreateAccount" style="margin-top:14px;">
+                        <div class="form-grid">
+                            <div class="form-row"><label for="nu">Username</label><input class="adm-input" id="nu" name="username" minlength="3" required /></div>
+                            <div class="form-row"><label for="npw">Password</label><input class="adm-input" id="npw" type="password" name="password" minlength="8" required autocomplete="new-password" /></div>
+                            <div class="form-row span-2">
+                                <label for="nph">Access</label>
+                                <select class="adm-select" id="nph" name="photographerId">
+                                    @foreach (var ph in photographers)
+                                    {
+                                        <option value="@ph.Id">Photographer — @ph.Name</option>
+                                    }
+                                    <option value="">Super Admin (all photographers)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="btn btn-gold" type="submit">Create account</button>
+                    </form>
+                </details>
+            </div>
+        }
+    </div>
+
+    <div class="stack">
+        <div class="card">
+            <div class="card-head"><div><h2>Studio profile</h2><p>Appears on the About page and receipts</p></div></div>
+            <form method="post" asp-action="UpdateProfile" enctype="multipart/form-data">
+                <input type="hidden" name="Id" value="@p.Id" />
+                <div class="form-grid">
+                    <div class="form-row"><label for="Name">Studio name</label><input class="adm-input" id="Name" name="Name" value="@p.Name" required /></div>
+                    <div class="form-row"><label for="Tagline">Tagline</label><input class="adm-input" id="Tagline" name="Tagline" value="@p.Tagline" maxlength="256" /></div>
+                    <div class="form-row span-2"><label for="Bio">Bio</label><textarea class="adm-textarea" id="Bio" name="Bio" rows="5">@p.Bio</textarea></div>
+                    <div class="form-row"><label for="GCashAccountName">GCash account name</label><input class="adm-input" id="GCashAccountName" name="GCashAccountName" value="@p.GCashAccountName" placeholder="e.g. MC***Y R." /></div>
+                    <div class="form-row"><label for="GCashNumber">GCash number</label><input class="adm-input" id="GCashNumber" name="GCashNumber" value="@p.GCashNumber" placeholder="09XX-XXX-XXXX" /></div>
+                    <div class="form-row"><label for="Logo">Logo</label><input class="adm-input" id="Logo" type="file" name="Logo" accept="image/*" /></div>
+                    <div class="form-row"><label for="GCashQr">GCash QR code</label><input class="adm-input" id="GCashQr" type="file" name="GCashQr" accept="image/*" /></div>
+                    <div class="form-row"><label for="FacebookUrl">Facebook</label><input class="adm-input" id="FacebookUrl" name="FacebookUrl" value="@p.FacebookUrl" type="url" /></div>
+                    <div class="form-row"><label for="InstagramUrl">Instagram</label><input class="adm-input" id="InstagramUrl" name="InstagramUrl" value="@p.InstagramUrl" type="url" /></div>
+                    <div class="form-row"><label for="TikTokUrl">TikTok</label><input class="adm-input" id="TikTokUrl" name="TikTokUrl" value="@p.TikTokUrl" type="url" /></div>
+                    <div class="form-row"><label for="XUrl">X / Twitter</label><input class="adm-input" id="XUrl" name="XUrl" value="@p.XUrl" type="url" /></div>
+                    @if (isSuper)
+                    {
+                        <label class="span-2 hint" style="display:flex;gap:8px;align-items:center;margin-bottom:14px;">
+                            <input type="checkbox" name="IsActive" value="true" @(p.IsActive ? "checked" : "") style="accent-color:var(--gold);width:16px;height:16px;" />
+                            Visible on the public site
+                        </label>
+                    }
+                    else
+                    {
+                        <input type="hidden" name="IsActive" value="true" />
+                    }
+                </div>
+                <button class="btn btn-gold" type="submit">Save profile</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="card-head"><div><h2>Packages</h2><p>Price 0 = custom quote (no online down payment)</p></div></div>
+            @foreach (var group in Model.Packages.GroupBy(k => k.Category))
+            {
+                <div class="nav-label hint" style="text-transform:uppercase;letter-spacing:.16em;font-size:.68rem;margin:6px 0 8px;">@group.Key</div>
+                @foreach (var k in group)
+                {
+                    <div class="pkg">
+                        <div class="pkg-top">
+                            <div><b>@k.Name</b> <span class="hint">· @k.DurationHours hr@(k.DurationHours == 1 ? "" : "s")</span></div>
+                            <span class="price">@(k.Price > 0 ? Ui.Peso(k.Price) : "Custom")</span>
+                        </div>
+                        <ul>@foreach (var line in k.InclusionList) { <li>@line</li> }</ul>
+                        <details class="pkg-edit">
+                            <summary>Edit package</summary>
+                            <form method="post" asp-action="SavePackage">
+                                <input type="hidden" name="Id" value="@k.Id" />
+                                <input type="hidden" name="PhotographerId" value="@p.Id" />
+                                <partial name="_PackageFields" model="k" />
+                                <div style="display:flex;gap:8px;">
+                                    <button class="btn btn-sm btn-gold" type="submit">Save</button>
+                                    <button class="btn btn-sm btn-red" type="submit" formaction="@Url.Action("DeletePackage", "Admin", new { id = k.Id })" formnovalidate onclick="return confirm('Remove this package? Existing bookings keep their details.')">Remove</button>
+                                </div>
+                            </form>
+                        </details>
+                    </div>
+                }
+            }
+            <details class="pkg-edit" style="margin-top:12px;">
+                <summary class="btn btn-sm"><svg><use href="#i-plus" /></svg>Add package</summary>
+                <form method="post" asp-action="SavePackage">
+                    <input type="hidden" name="PhotographerId" value="@p.Id" />
+                    <partial name="_PackageFields" model="new ServicePackage { DurationHours = 3 }" />
+                    <button class="btn btn-gold" type="submit">Add package</button>
+                </form>
+            </details>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,19 @@
+@model VibeShootAdmin.Models.Entities.ServicePackage
+@{
+    var uid = Model.Id > 0 ? Model.Id.ToString() : "new";
+}
+<div class="form-grid">
+    <div class="form-row"><label for="pn-@uid">Name</label><input class="adm-input" id="pn-@uid" name="Name" value="@Model.Name" required /></div>
+    <div class="form-row">
+        <label for="pc-@uid">Category</label>
+        <select class="adm-select" id="pc-@uid" name="Category">
+            @foreach (var c in VibeShootAdmin.Models.Entities.ServicePackage.Categories)
+            {
+                <option selected="@(Model.Category == c)">@c</option>
+            }
+        </select>
+    </div>
+    <div class="form-row"><label for="pp-@uid">Price (₱)</label><input class="adm-input" id="pp-@uid" name="Price" type="number" min="0" step="0.01" value="@Model.Price.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" required /></div>
+    <div class="form-row"><label for="pd-@uid">Duration (hours)</label><input class="adm-input" id="pd-@uid" name="DurationHours" type="number" min="1" max="12" value="@Model.DurationHours" required /></div>
+    <div class="form-row span-2"><label for="pi-@uid">Inclusions (one per line)</label><textarea class="adm-textarea" id="pi-@uid" name="Inclusions" rows="4">@Model.Inclusions</textarea></div>
+</div>

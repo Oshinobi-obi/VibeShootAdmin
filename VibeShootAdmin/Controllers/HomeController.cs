@@ -6,15 +6,8 @@ namespace VibeShootAdmin.Controllers
 {
     public class HomeController : Controller
     {
-        public IActionResult Index()
-        {
-            return View();
-        }
-
-        public IActionResult Privacy()
-        {
-            return View();
-        }
+        /// <summary>The console has no landing page of its own; send people to the dashboard (or sign-in).</summary>
+        public IActionResult Index() => RedirectToAction("Dashboard", "Admin");
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()

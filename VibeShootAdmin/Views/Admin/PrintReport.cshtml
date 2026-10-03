@@ -1,0 +1,81 @@
+@model VibeShootAdmin.Models.Admin.ReportViewModel
+@using VibeShootAdmin.Models.Entities
+@{
+    Layout = null;
+    var total = Model.Payments.Sum(p => p.Amount);
+    var gcash = Model.Payments.Where(p => p.Method == PaymentMethod.GCash).Sum(p => p.Amount);
+    var cash = Model.Payments.Where(p => p.Method == PaymentMethod.Cash).Sum(p => p.Amount);
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Collection Report · VibeShoot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/Receipt.css" asp-append-version="true" />
+</head>
+<body class="rc">
+    <div class="rc-toolbar" style="max-width:1000px;">
+        <a class="back" href="@Url.Action("Receipts", "Admin")">&larr; Back to receipts</a>
+        <div class="group">
+            <button class="rc-btn gold" type="button" onclick="window.print()">Print report</button>
+        </div>
+    </div>
+
+    <article class="paper wide">
+        <header class="rc-head">
+            <div class="rc-brand">
+                <div>
+                    <b>VIBESHOOT</b>
+                    <small>@Model.PhotographerName</small>
+                </div>
+            </div>
+            <div class="rc-doc">
+                <div class="type">Collection Report</div>
+                <div class="no">@Model.From.ToString("MMM d, yyyy") – @Model.To.ToString("MMM d, yyyy")</div>
+                <div class="date">Prepared by @Model.PreparedBy · @Ui.Stamp(DateTime.UtcNow)</div>
+            </div>
+        </header>
+
+        <div class="rc-summary">
+            <div><div class="rc-label">Total collected</div><b>@Ui.Peso(total)</b></div>
+            <div><div class="rc-label">Via GCash</div><b>@Ui.Peso(gcash)</b></div>
+            <div><div class="rc-label">Via cash</div><b>@Ui.Peso(cash)</b></div>
+        </div>
+
+        <table class="rc-table">
+            <thead>
+                <tr><th>Verified</th><th>Receipt no.</th><th>Client</th><th>Booking</th><th>Type</th><th>Method / Ref</th><th class="r">Amount</th></tr>
+            </thead>
+            <tbody>
+                @if (!Model.Payments.Any())
+                {
+                    <tr><td colspan="7" style="color:var(--ink-3);">No verified payments in this period.</td></tr>
+                }
+                @foreach (var p in Model.Payments)
+                {
+                    <tr>
+                        <td style="white-space:nowrap;">@Ui.Local(p.VerifiedAt ?? p.CreatedAt).ToString("MMM d, yyyy")</td>
+                        <td class="mono">@p.ReceiptNumber</td>
+                        <td>@p.Booking?.ClientName<br /><small>@p.Booking?.Photographer?.Name</small></td>
+                        <td class="mono">@p.BookingTransactionId<br /><small>@p.Booking?.TargetDate.ToString("MMM d")</small></td>
+                        <td>@p.Type</td>
+                        <td class="mono">@p.Method @(p.ReferenceNumber != null ? "· " + p.ReferenceNumber : "")</td>
+                        <td class="r">@Ui.Peso(p.Amount)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <div class="rc-totals">
+            <div><span>Transactions</span><span>@Model.Payments.Count</span></div>
+            <div class="grand"><span>Total</span><span>@Ui.Peso(total)</span></div>
+        </div>
+
+        <div class="rc-sign"><div>Checked by</div></div>
+    </article>
+</body>
+</html>

@@ -1,0 +1,31 @@
+@model (int Page, int TotalPages, int TotalItems)
+@{
+    string UrlFor(int page)
+    {
+        var q = Context.Request.Query.Where(kv => kv.Key != "page")
+            .Select(kv => $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value.ToString())}")
+            .Append($"page={page}");
+        return Context.Request.Path + "?" + string.Join("&", q);
+    }
+    var cur = Math.Clamp(Model.Page, 1, Model.TotalPages);
+    var from = Math.Max(1, cur - 2);
+    var to = Math.Min(Model.TotalPages, cur + 2);
+}
+@if (Model.TotalItems > 0)
+{
+    <div class="pager">
+        <span>Page @cur of @Model.TotalPages · @Model.TotalItems record@(Model.TotalItems == 1 ? "" : "s")</span>
+        @if (Model.TotalPages > 1)
+        {
+            <nav aria-label="Pages">
+                @if (cur > 1) { <a href="@UrlFor(cur - 1)" aria-label="Previous page">&lsaquo;</a> }
+                @for (int i = from; i <= to; i++)
+                {
+                    if (i == cur) { <span class="cur">@i</span> }
+                    else { <a href="@UrlFor(i)">@i</a> }
+                }
+                @if (cur < Model.TotalPages) { <a href="@UrlFor(cur + 1)" aria-label="Next page">&rsaquo;</a> }
+            </nav>
+        }
+    </div>
+}

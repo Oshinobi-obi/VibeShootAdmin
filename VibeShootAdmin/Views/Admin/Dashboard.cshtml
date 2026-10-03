@@ -1,0 +1,168 @@
+@model VibeShootAdmin.Models.Admin.DashboardViewModel
+@using VibeShootAdmin.Models.Entities
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Overview";
+    ViewData["Nav"] = "Dashboard";
+    ViewData["Subtitle"] = DateTime.Today.ToString("dddd, MMMM d, yyyy");
+
+    var pidQuery = ViewBag.SelectedPhotographerId is int sp ? $"&photographerId={sp}" : "";
+    var change = Model.RevenueLastMonth == 0 ? (decimal?)null : (Model.RevenueThisMonth - Model.RevenueLastMonth) / Model.RevenueLastMonth * 100;
+
+    // Round the chart's top to a friendly number so gridlines read cleanly.
+    var maxVal = Model.Monthly.Count == 0 ? 0 : Model.Monthly.Max(m => m.Amount);
+    decimal magnitude = maxVal <= 0 ? 1000 : (decimal)Math.Pow(10, Math.Floor(Math.Log10((double)maxVal)));
+    var top = maxVal <= 0 ? 4000 : new[] { 1m, 2m, 4m, 5m, 10m }.Select(f => f * magnitude).First(t => t >= maxVal);
+    var ticks = 4;
+
+    var statusColors = new Dictionary<string, string>
+    {
+        [BookingStatus.Pending] = "var(--amber)",
+        [BookingStatus.Confirmed] = "var(--blue)",
+        [BookingStatus.Completed] = "var(--green)",
+        [BookingStatus.Declined] = "var(--red)",
+        [BookingStatus.Cancelled] = "var(--gray)",
+    };
+    var statusTotal = Math.Max(1, Model.StatusCounts.Values.Sum());
+}
+
+<section class="kpis">
+    <div class="kpi highlight">
+        <div class="kpi-label"><svg><use href="#i-wallet" /></svg>Collected this month</div>
+        <div class="kpi-value">@Ui.Peso(Model.RevenueThisMonth)</div>
+        <div class="kpi-sub">
+            @if (change != null)
+            {
+                <span class="@(change >= 0 ? "up" : "down")">@(change >= 0 ? "▲" : "▼") @Math.Abs(change.Value).ToString("0")%</span> <span>vs last month</span>
+            }
+            else
+            {
+                <span>Verified payments only</span>
+            }
+        </div>
+    </div>
+    <div class="kpi">
+        <a class="kpi-link" href="@Url.Action("Transactions", "Admin")?status=@Uri.EscapeDataString(PaymentStatus.ForVerification)@pidQuery" aria-label="Review payments"></a>
+        <div class="kpi-label"><svg><use href="#i-receipt" /></svg>Awaiting verification</div>
+        <div class="kpi-value">@Model.PaymentsForVerification</div>
+        <div class="kpi-sub">@Ui.Peso(Model.AmountForVerification) to review</div>
+    </div>
+    <div class="kpi">
+        <a class="kpi-link" href="@Url.Action("Bookings", "Admin")?status=Pending@pidQuery" aria-label="Pending bookings"></a>
+        <div class="kpi-label"><svg><use href="#i-book" /></svg>Pending requests</div>
+        <div class="kpi-value">@Model.PendingBookings</div>
+        <div class="kpi-sub">of @Model.TotalBookings total bookings</div>
+    </div>
+    <div class="kpi">
+        <a class="kpi-link" href="@Url.Action("Schedule", "Admin")" aria-label="Schedule"></a>
+        <div class="kpi-label"><svg><use href="#i-cal" /></svg>Upcoming shoots</div>
+        <div class="kpi-value">@Model.ConfirmedUpcoming</div>
+        <div class="kpi-sub">@Ui.Peso(Model.OutstandingBalance) balance to collect</div>
+    </div>
+</section>
+
+<section class="grid grid-3-1" style="margin-bottom:18px;">
+    <div class="card">
+        <div class="card-head">
+            <div>
+                <h2>Verified collections</h2>
+                <p>GCash and cash payments confirmed per month, last 6 months</p>
+            </div>
+            <a class="btn btn-sm" href="@Url.Action("PrintReport", "Admin")?from=@DateTime.Today.AddMonths(-5).ToString("yyyy-MM-01")&to=@DateTime.Today.ToString("yyyy-MM-dd")@pidQuery" target="_blank"><svg><use href="#i-print" /></svg>Report</a>
+        </div>
+        <div class="chart" role="img" aria-label="Monthly verified collections">
+            <div class="chart-grid">
+                @for (int i = ticks; i >= 0; i--)
+                {
+                    <div><span>@Ui.PesoShort(top / ticks * i)</span></div>
+                }
+            </div>
+            @for (int i = 0; i < Model.Monthly.Count; i++)
+            {
+                var m = Model.Monthly[i];
+                var h = top == 0 ? 0 : (double)(m.Amount / top) * 100;
+                <div class="chart-col @(m.Amount == 0 ? "zero" : "") @(i == Model.Monthly.Count - 1 ? "current" : "")" tabindex="0">
+                    <div class="bar-area"><div class="bar" style="height:@(h.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; animation-delay:@(i * 70)ms"></div></div>
+                    <div class="lbl">@m.Label[..3]</div>
+                    <div class="chart-tip"><b>@Ui.Peso(m.Amount)</b><span>@m.Label · @m.Bookings new booking@(m.Bookings == 1 ? "" : "s")</span></div>
+                </div>
+            }
+        </div>
+        <details style="margin-top:10px;">
+            <summary class="hint" style="cursor:pointer;">View as table</summary>
+            <table class="tbl" style="margin-top:8px;">
+                <thead><tr><th>Month</th><th class="right">Collected</th><th class="right">New bookings</th></tr></thead>
+                <tbody>
+                    @foreach (var m in Model.Monthly)
+                    {
+                        <tr><td>@m.Label</td><td class="right num">@Ui.Peso(m.Amount)</td><td class="right num">@m.Bookings</td></tr>
+                    }
+                </tbody>
+            </table>
+        </details>
+    </div>
+
+    <div class="card">
+        <div class="card-head"><div><h2>Bookings by status</h2><p>All time</p></div></div>
+        <div class="breakdown">
+            @foreach (var s in BookingStatus.All)
+            {
+                var c = Model.StatusCounts.TryGetValue(s, out var v) ? v : 0;
+                <a class="breakdown-row" href="@Url.Action("Bookings", "Admin")?status=@s@pidQuery" style="color:inherit;">
+                    <span>@s</span>
+                    <span class="track"><span class="fill" style="display:block;width:@(c * 100 / statusTotal)%;background:@statusColors[s]"></span></span>
+                    <span class="count">@c</span>
+                </a>
+            }
+        </div>
+    </div>
+</section>
+
+<section class="grid grid-2">
+    <div class="card">
+        <div class="card-head">
+            <div><h2>Upcoming sessions</h2><p>Pending and confirmed shoots</p></div>
+            <a class="btn btn-sm btn-ghost" href="@Url.Action("Schedule", "Admin")">Calendar &rarr;</a>
+        </div>
+        @if (!Model.Upcoming.Any())
+        {
+            <div class="empty"><svg><use href="#i-cal" /></svg><b>No upcoming sessions</b>New booking requests will appear here.</div>
+        }
+        <div class="list">
+            @foreach (var b in Model.Upcoming)
+            {
+                <a class="list-item" href="@Url.Action("BookingDetails", "Admin", new { id = b.TransactionId })">
+                    <span class="date-chip"><small>@b.TargetDate.ToString("MMM")</small><b>@b.TargetDate.Day</b></span>
+                    <span class="meta">
+                        <b>@b.ClientName</b>
+                        <small>@b.TimeRange · @b.Category · @b.Photographer?.Name</small>
+                    </span>
+                    @Ui.Pill(b.Status)
+                </a>
+            }
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head">
+            <div><h2>Latest transactions</h2><p>Most recent payments received</p></div>
+            <a class="btn btn-sm btn-ghost" href="@Url.Action("Transactions", "Admin")">All transactions &rarr;</a>
+        </div>
+        @if (!Model.RecentPayments.Any())
+        {
+            <div class="empty"><svg><use href="#i-wallet" /></svg><b>No transactions yet</b>GCash payments from clients will show up here.</div>
+        }
+        <div class="list">
+            @foreach (var p in Model.RecentPayments)
+            {
+                <a class="list-item" href="@Url.Action("BookingDetails", "Admin", new { id = p.BookingTransactionId })">
+                    <span class="meta">
+                        <b>@p.Booking?.ClientName</b>
+                        <small class="mono">@p.ReceiptNumber</small> <small>· @p.Method @p.Type · @Ui.Stamp(p.CreatedAt)</small>
+                    </span>
+                    <span class="amt">@Ui.Peso(p.Amount)<small>@Ui.Pill(p.Status)</small></span>
+                </a>
+            }
+        </div>
+    </div>
+</section>

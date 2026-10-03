@@ -1,0 +1,76 @@
+@model VibeShootAdmin.Models.Admin.TransactionsViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Receipts";
+    ViewData["Nav"] = "Receipts";
+    ViewData["Subtitle"] = "Official receipts for verified payments — reprint any time";
+    var f = Model.Filter;
+    var reportFrom = (f.From ?? new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1)).ToString("yyyy-MM-dd");
+    var reportTo = (f.To ?? DateTime.Today).ToString("yyyy-MM-dd");
+}
+
+<section class="grid grid-3-1">
+    <div class="card">
+        <form class="filters" method="get">
+            @if (f.PhotographerId != null) { <input type="hidden" name="photographerId" value="@f.PhotographerId" /> }
+            <div class="search">
+                <svg><use href="#i-search" /></svg>
+                <input class="adm-input" name="q" value="@f.Q" placeholder="Search receipt no., reference, client" />
+            </div>
+            <label class="date">From <input class="adm-input" type="date" name="from" value="@f.From?.ToString("yyyy-MM-dd")" /></label>
+            <label class="date">to <input class="adm-input" type="date" name="to" value="@f.To?.ToString("yyyy-MM-dd")" /></label>
+            <button class="btn" type="submit">Filter</button>
+        </form>
+
+        @if (!Model.Items.Any())
+        {
+            <div class="empty"><svg><use href="#i-receipt" /></svg><b>No receipts yet</b>Receipts are issued once a payment is verified.</div>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table class="tbl">
+                    <thead>
+                        <tr><th>Receipt no.</th><th>Issued</th><th>Client</th><th>For</th><th class="right">Amount</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model.Items)
+                        {
+                            <tr>
+                                <td class="mono"><b>@p.ReceiptNumber</b></td>
+                                <td class="nowrap">@Ui.Stamp(p.VerifiedAt ?? p.CreatedAt)</td>
+                                <td class="who"><b>@p.Booking?.ClientName</b><small><a href="@Url.Action("BookingDetails", "Admin", new { id = p.BookingTransactionId })">@p.BookingTransactionId</a></small></td>
+                                <td>@p.Type<br /><small class="muted">@p.Method</small></td>
+                                <td class="right num nowrap"><b>@Ui.Peso(p.Amount)</b></td>
+                                <td>
+                                    <div class="row-actions">
+                                        <a class="btn btn-sm btn-gold" href="@Url.Action("PrintReceipt", "Admin", new { id = p.Id })" target="_blank"><svg><use href="#i-print" /></svg>Print</a>
+                                        <a class="btn btn-sm" href="@Url.Action("PrintBooking", "Admin", new { id = p.BookingTransactionId })" target="_blank" title="Full booking statement">Statement</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        <partial name="_Pager" model="(f.Page, Model.TotalPages, Model.TotalItems)" />
+    </div>
+
+    <div class="stack">
+        <div class="card">
+            <div class="kpi-label">Total in this list</div>
+            <div class="kpi-value">@Ui.Peso(Model.VerifiedTotal)</div>
+            <div class="kpi-sub">@Model.TotalItems receipt@(Model.TotalItems == 1 ? "" : "s")</div>
+        </div>
+        <div class="card">
+            <div class="card-head"><div><h2>Collection report</h2><p>Printable summary of verified payments</p></div></div>
+            <form method="get" action="@Url.Action("PrintReport", "Admin")" target="_blank">
+                @if (f.PhotographerId != null) { <input type="hidden" name="photographerId" value="@f.PhotographerId" /> }
+                <div class="form-row"><label for="rf">From</label><input class="adm-input" id="rf" type="date" name="from" value="@reportFrom" /></div>
+                <div class="form-row"><label for="rt">To</label><input class="adm-input" id="rt" type="date" name="to" value="@reportTo" /></div>
+                <button class="btn btn-gold btn-block" type="submit"><svg><use href="#i-print" /></svg>Generate &amp; print</button>
+            </form>
+        </div>
+    </div>
+</section>

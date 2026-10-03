@@ -1,0 +1,113 @@
+@model VibeShootAdmin.Models.Admin.GalleryAdminViewModel
+@using VibeShootAdmin.Models.Entities
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Gallery";
+    ViewData["Nav"] = "Gallery";
+    ViewData["Subtitle"] = "Portfolio photos stored in the database and shown on the public Album page";
+    ViewData["SwitcherRequired"] = true;
+    var total = Model.CategoryCounts.Values.Sum();
+    string Tab(string? c) => $"?photographerId={Model.PhotographerId}" + (c == null ? "" : "&category=" + c);
+}
+
+@section TopActions {
+    @if (ViewBag.IsSuperAdmin == true)
+    {
+        <form class="inline-form" method="post" asp-action="RescanGallery" title="Import photos copied into wwwroot/Uploads/Album">
+            <button class="btn" type="submit">Sync from Uploads folder</button>
+        </form>
+    }
+}
+
+<section class="grid grid-3-1">
+    <div class="card">
+        <div class="tabs" style="margin-bottom:18px;">
+            <a class="@(Model.Category == null ? "active" : "")" href="@Tab(null)">All <span>@total</span></a>
+            @foreach (var c in GalleryImage.Categories)
+            {
+                <a class="@(Model.Category == c ? "active" : "")" href="@Tab(c)">@c <span>@(Model.CategoryCounts.TryGetValue(c, out var n) ? n : 0)</span></a>
+            }
+        </div>
+
+        @if (!Model.Images.Any())
+        {
+            <div class="empty"><svg><use href="#i-image" /></svg><b>No photos here yet</b>Upload some using the panel on the right.</div>
+        }
+        <div class="gal-grid">
+            @foreach (var img in Model.Images)
+            {
+                <div class="gal-item">
+                    <img src="@img.FilePath" alt="@img.Category photo" loading="lazy" data-view="@img.FilePath" data-caption="@img.Category · @System.IO.Path.GetFileName(img.FilePath)" />
+                    <button type="button" class="star @(img.IsFeatured ? "on" : "")" data-feature="@img.Id" title="Feature on the photographer card and sign-in screen" aria-label="Toggle featured"><svg><use href="#i-star" /></svg></button>
+                    <div class="ov">
+                        <small>@img.Category · @((img.FileSizeBytes / 1024.0).ToString("0"))&nbsp;KB</small>
+                        <form class="inline-form" method="post" asp-action="DeleteGalleryImage" asp-route-id="@img.Id" asp-route-category="@Model.Category" data-confirm="Delete this photo permanently?">
+                            <button class="btn btn-sm btn-red" type="submit" aria-label="Delete photo"><svg><use href="#i-trash" /></svg></button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card" style="align-self:start;">
+        <div class="card-head"><div><h2>Upload photos</h2><p>JPG, PNG or WEBP · up to 10 MB each</p></div></div>
+        <form method="post" asp-action="UploadGallery" enctype="multipart/form-data" id="uploadForm">
+            <input type="hidden" name="photographerId" value="@Model.PhotographerId" />
+            <div class="form-row">
+                <label for="category">Album</label>
+                <select class="adm-select" id="category" name="category">
+                    @foreach (var c in GalleryImage.Categories)
+                    {
+                        <option selected="@(Model.Category == c)">@c</option>
+                    }
+                </select>
+            </div>
+            <label class="dropzone" id="dropzone">
+                <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0-4 4m4-4 4 4M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                <b>Drop photos here</b>
+                <span class="hint">or click to browse</span>
+                <input type="file" name="files" id="files" accept="image/jpeg,image/png,image/webp" multiple />
+                <div class="dz-previews" id="dzPreviews"></div>
+            </label>
+            <button class="btn btn-gold btn-block" type="submit" style="margin-top:14px;" id="uploadBtn" disabled><svg><use href="#i-plus" /></svg>Upload</button>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        (function () {
+            var input = document.getElementById('files');
+            var zone = document.getElementById('dropzone');
+            var previews = document.getElementById('dzPreviews');
+            var btn = document.getElementById('uploadBtn');
+
+            function showPreviews() {
+                previews.innerHTML = '';
+                Array.prototype.slice.call(input.files, 0, 12).forEach(function (f) {
+                    var img = document.createElement('img');
+                    img.src = URL.createObjectURL(f);
+                    previews.appendChild(img);
+                });
+                btn.disabled = input.files.length === 0;
+                btn.lastChild.textContent = input.files.length ? 'Upload ' + input.files.length + ' photo' + (input.files.length === 1 ? '' : 's') : 'Upload';
+            }
+            input.addEventListener('change', showPreviews);
+            ['dragenter', 'dragover'].forEach(function (ev) { zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.add('drag'); }); });
+            ['dragleave', 'drop'].forEach(function (ev) { zone.addEventListener(ev, function (e) { e.preventDefault(); zone.classList.remove('drag'); }); });
+            zone.addEventListener('drop', function (e) { input.files = e.dataTransfer.files; showPreviews(); });
+            document.getElementById('uploadForm').addEventListener('submit', function () { btn.disabled = true; btn.lastChild.textContent = 'Uploading…'; });
+
+            document.querySelectorAll('[data-feature]').forEach(function (star) {
+                star.addEventListener('click', async function () {
+                    var res = await fetch('/Admin/ToggleFeatured?id=' + star.getAttribute('data-feature'), { method: 'POST', headers: { 'RequestVerificationToken': vsToken() } });
+                    if (!res.ok) { vsToast('Could not update photo.', true); return; }
+                    var json = await res.json();
+                    star.classList.toggle('on', json.featured);
+                    vsToast(json.featured ? 'Photo featured.' : 'Photo un-featured.');
+                });
+            });
+        })();
+    </script>
+}

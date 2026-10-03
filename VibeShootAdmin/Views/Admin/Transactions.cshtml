@@ -1,0 +1,152 @@
+@model VibeShootAdmin.Models.Admin.TransactionsViewModel
+@using VibeShootAdmin.Models.Entities
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Transactions";
+    ViewData["Nav"] = "Transactions";
+    ViewData["Subtitle"] = "Monitor GCash payments, verify proofs and track collections";
+    var f = Model.Filter;
+    var here = Context.Request.Path + Context.Request.QueryString;
+
+    string Url_(string? status)
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrEmpty(status)) parts.Add("status=" + Uri.EscapeDataString(status));
+        if (f.PhotographerId != null) parts.Add("photographerId=" + f.PhotographerId);
+        if (!string.IsNullOrEmpty(f.Q)) parts.Add("q=" + Uri.EscapeDataString(f.Q));
+        if (!string.IsNullOrEmpty(f.Method)) parts.Add("method=" + Uri.EscapeDataString(f.Method));
+        if (f.From != null) parts.Add("from=" + f.From.Value.ToString("yyyy-MM-dd"));
+        if (f.To != null) parts.Add("to=" + f.To.Value.ToString("yyyy-MM-dd"));
+        return "?" + string.Join("&", parts);
+    }
+}
+
+@section TopActions {
+    <a class="btn" href="@Url.Action("ExportTransactions", "Admin")@Context.Request.QueryString"><svg><use href="#i-dl" /></svg>Export CSV</a>
+}
+
+<section class="kpis">
+    <div class="kpi highlight">
+        <div class="kpi-label"><svg><use href="#i-check" /></svg>Verified</div>
+        <div class="kpi-value">@Ui.Peso(Model.VerifiedTotal)</div>
+        <div class="kpi-sub">Money confirmed received</div>
+    </div>
+    <div class="kpi">
+        <a class="kpi-link" href="@Url_(PaymentStatus.ForVerification)" aria-label="Show payments for verification"></a>
+        <div class="kpi-label"><svg><use href="#i-eye" /></svg>For verification</div>
+        <div class="kpi-value">@Ui.Peso(Model.ForVerificationTotal)</div>
+        <div class="kpi-sub">@Model.ForVerificationCount proof@(Model.ForVerificationCount == 1 ? "" : "s") to check</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-label"><svg><use href="#i-x" /></svg>Rejected</div>
+        <div class="kpi-value">@Ui.Peso(Model.RejectedTotal)</div>
+        <div class="kpi-sub">Invalid or unmatched proofs</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-label"><svg><use href="#i-wallet" /></svg>Showing</div>
+        <div class="kpi-value">@Model.TotalItems</div>
+        <div class="kpi-sub">transaction@(Model.TotalItems == 1 ? "" : "s") match the filters</div>
+    </div>
+</section>
+
+<div class="tabs">
+    <a class="@(string.IsNullOrEmpty(f.Status) ? "active" : "")" href="@Url_(null)">All</a>
+    @foreach (var s in PaymentStatus.All)
+    {
+        <a class="@(f.Status == s ? "active" : "")" href="@Url_(s)">@s</a>
+    }
+</div>
+
+<div class="card">
+    <form class="filters" method="get">
+        <input type="hidden" name="status" value="@f.Status" />
+        @if (f.PhotographerId != null) { <input type="hidden" name="photographerId" value="@f.PhotographerId" /> }
+        <div class="search">
+            <svg><use href="#i-search" /></svg>
+            <input class="adm-input" name="q" value="@f.Q" placeholder="Search receipt no., GCash reference, transaction ID or client" />
+        </div>
+        <select class="adm-select" name="method" aria-label="Payment method">
+            <option value="">All methods</option>
+            <option selected="@(f.Method == PaymentMethod.GCash)">@PaymentMethod.GCash</option>
+            <option selected="@(f.Method == PaymentMethod.Cash)">@PaymentMethod.Cash</option>
+        </select>
+        <label class="date">From <input class="adm-input" type="date" name="from" value="@f.From?.ToString("yyyy-MM-dd")" /></label>
+        <label class="date">to <input class="adm-input" type="date" name="to" value="@f.To?.ToString("yyyy-MM-dd")" /></label>
+        <button class="btn" type="submit">Filter</button>
+    </form>
+
+    @if (!Model.Items.Any())
+    {
+        <div class="empty"><svg><use href="#i-wallet" /></svg><b>No transactions</b>Payments submitted by clients will appear here for verification.</div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="tbl">
+                <thead>
+                    <tr>
+                        <th>Proof</th>
+                        <th>Receipt / Booking</th>
+                        <th>Client</th>
+                        <th class="hide-md">Type</th>
+                        <th>GCash ref no.</th>
+                        <th class="right">Amount</th>
+                        <th>Status</th>
+                        <th class="right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.Items)
+                    {
+                        <tr class="@(p.Status == PaymentStatus.ForVerification ? "row-attn" : "")">
+                            <td>
+                                @if (!string.IsNullOrEmpty(p.ProofImagePath))
+                                {
+                                    <button type="button" class="thumb-btn" data-view="@p.ProofImagePath" data-caption="@p.Booking?.ClientName · Ref @p.ReferenceNumber · @Ui.Peso(p.Amount)"><img src="@p.ProofImagePath" alt="GCash proof" loading="lazy" /></button>
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
+                            </td>
+                            <td class="who">
+                                <b class="mono">@p.ReceiptNumber</b>
+                                <small><a href="@Url.Action("BookingDetails", "Admin", new { id = p.BookingTransactionId })">@p.BookingTransactionId</a></small>
+                            </td>
+                            <td class="who">
+                                <b class="nowrap">@p.Booking?.ClientName</b>
+                                <small class="nowrap">@Ui.Local(p.CreatedAt).ToString("MMM d · h:mm tt")</small>
+                            </td>
+                            <td class="nowrap hide-md">@p.Type<br /><small class="muted">@p.Method</small></td>
+                            <td class="mono">@(p.ReferenceNumber ?? "—")</td>
+                            <td class="right num nowrap"><b>@Ui.Peso(p.Amount)</b></td>
+                            <td>
+                                @Ui.Pill(p.Status)
+                                @if (p.VerifiedBy != null) { <br /><small class="muted">by @p.VerifiedBy</small> }
+                            </td>
+                            <td>
+                                <div class="row-actions">
+                                    @if (p.Status == PaymentStatus.ForVerification)
+                                    {
+                                        <form class="inline-form" method="post" asp-action="VerifyPayment">
+                                            <input type="hidden" name="id" value="@p.Id" /><input type="hidden" name="returnUrl" value="@here" />
+                                            <button class="btn btn-sm btn-green" title="Verify"><svg><use href="#i-check" /></svg>Verify</button>
+                                        </form>
+                                        <button type="button" class="btn btn-sm btn-red" data-reject="@p.Id" data-label="@p.ReceiptNumber · @p.Booking?.ClientName · @Ui.Peso(p.Amount)">Reject</button>
+                                    }
+                                    else if (p.Status == PaymentStatus.Verified)
+                                    {
+                                        <a class="btn btn-sm" href="@Url.Action("PrintReceipt", "Admin", new { id = p.Id })" target="_blank"><svg><use href="#i-print" /></svg>Receipt</a>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    <partial name="_Pager" model="(f.Page, Model.TotalPages, Model.TotalItems)" />
+</div>
+
+<partial name="_RejectDialog" model="here" />

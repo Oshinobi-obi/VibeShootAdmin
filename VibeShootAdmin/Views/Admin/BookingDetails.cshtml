@@ -1,0 +1,194 @@
+@model VibeShootAdmin.Models.Entities.Booking
+@using VibeShootAdmin.Models.Entities
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = Model.ClientName;
+    ViewData["Nav"] = "Bookings";
+    ViewData["Subtitle"] = $"{Model.TransactionId} · requested {Ui.Stamp(Model.CreatedAt)}";
+    ViewData["HideSwitcher"] = true;
+    var here = Url.Action("BookingDetails", "Admin", new { id = Model.TransactionId });
+    var paidPct = Model.TotalPrice > 0 ? (int)Math.Min(100, Model.AmountPaid / Model.TotalPrice * 100) : 0;
+    var isOpen = Model.Status is BookingStatus.Pending or BookingStatus.Confirmed;
+}
+
+@section TopActions {
+    <a class="btn" href="@Url.Action("Bookings", "Admin")">&larr; Bookings</a>
+    <a class="btn" href="@Url.Action("PrintBooking", "Admin", new { id = Model.TransactionId })" target="_blank"><svg><use href="#i-print" /></svg>Print statement</a>
+}
+
+<section class="grid grid-1-2">
+    <div class="stack">
+        <div class="card">
+            <div class="card-head">
+                <h2>Session</h2>
+                @Ui.Pill(Model.Status)
+            </div>
+            <dl class="dl">
+                <dt>Date</dt><dd><b>@Model.TargetDate.ToString("dddd, MMMM d, yyyy")</b></dd>
+                <dt>Time</dt><dd>@Model.TimeRange</dd>
+                <dt>Photographer</dt><dd>@Model.Photographer?.Name</dd>
+                <dt>Category</dt><dd>@Model.Category</dd>
+                <dt>Package</dt><dd>@Model.PackageName</dd>
+                <dt>Venue</dt><dd>@Model.Venue</dd>
+                @if (!string.IsNullOrWhiteSpace(Model.Notes))
+                {
+                    <dt>Client notes</dt><dd>@Model.Notes</dd>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.AdminRemarks))
+                {
+                    <dt>Admin remarks</dt><dd>@Model.AdminRemarks</dd>
+                }
+            </dl>
+        </div>
+
+        <div class="card">
+            <div class="card-head"><h2>Client</h2></div>
+            <dl class="dl">
+                <dt>Name</dt><dd>@Model.ClientName</dd>
+                <dt>Mobile</dt><dd><a href="tel:@Model.ContactNumber.Replace("-", "")">@Model.ContactNumber</a></dd>
+                @if (!string.IsNullOrWhiteSpace(Model.Email))
+                {
+                    <dt>Email</dt><dd><a href="mailto:@Model.Email">@Model.Email</a></dd>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.SocialLink))
+                {
+                    <dt>Messenger</dt><dd><a href="@(Model.SocialLink.StartsWith("http") ? Model.SocialLink : "https://" + Model.SocialLink)" target="_blank" rel="noopener noreferrer">@Model.SocialLink</a></dd>
+                }
+            </dl>
+        </div>
+
+        <div class="card">
+            <div class="card-head"><h2>Update status</h2></div>
+            <form method="post" asp-action="UpdateStatus">
+                <input type="hidden" name="transactionId" value="@Model.TransactionId" />
+                <div class="form-row">
+                    <label for="remarks">Remarks (shown to the client on their receipt)</label>
+                    <textarea class="adm-textarea" id="remarks" name="remarks" placeholder="Optional note, e.g. reason for declining">@Model.AdminRemarks</textarea>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    @if (Model.Status == BookingStatus.Pending)
+                    {
+                        <button class="btn btn-gold" name="status" value="@BookingStatus.Confirmed"><svg><use href="#i-check" /></svg>Confirm booking</button>
+                        <button class="btn btn-red" name="status" value="@BookingStatus.Declined" data-confirm-btn="Decline this booking?">Decline</button>
+                    }
+                    @if (Model.Status == BookingStatus.Confirmed)
+                    {
+                        <button class="btn btn-green" name="status" value="@BookingStatus.Completed"><svg><use href="#i-check" /></svg>Mark as completed</button>
+                        <button class="btn btn-red" name="status" value="@BookingStatus.Cancelled" data-confirm-btn="Cancel this booking?">Cancel booking</button>
+                    }
+                    @if (!isOpen)
+                    {
+                        <button class="btn" name="status" value="@BookingStatus.Pending">Reopen as pending</button>
+                    }
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="stack">
+        <div class="card">
+            <div class="card-head">
+                <div><h2>Payment summary</h2><p>Down payment required: @Ui.Peso(Model.DownPaymentRequired) (50%)</p></div>
+                @Ui.Pill(Model.PaymentState)
+            </div>
+            <div class="money-row"><span>Package price</span><span>@(Model.TotalPrice > 0 ? Ui.Peso(Model.TotalPrice) : "Custom quote")</span></div>
+            <div class="money-row"><span>Verified payments</span><span style="color:var(--green)">− @Ui.Peso(Model.AmountPaid)</span></div>
+            @if (Model.AmountForVerification > 0)
+            {
+                <div class="money-row"><span>Awaiting verification</span><span style="color:var(--amber)">@Ui.Peso(Model.AmountForVerification)</span></div>
+            }
+            <div class="money-row total"><span>Balance</span><span>@Ui.Peso(Model.Balance)</span></div>
+            @if (Model.TotalPrice > 0)
+            {
+                <div class="progress"><div style="width:@paidPct%"></div></div>
+                <div class="hint">@paidPct% paid</div>
+            }
+        </div>
+
+        <div class="card">
+            <div class="card-head"><div><h2>Transactions</h2><p>GCash proofs and recorded payments</p></div></div>
+            @if (!Model.Payments.Any())
+            {
+                <div class="empty" style="padding:24px;"><b>No payments yet</b>@(Model.TotalPrice <= 0 ? "Send the client a quote, then record their payment below." : "")</div>
+            }
+            @foreach (var p in Model.Payments)
+            {
+                <div class="payment-card">
+                    @if (!string.IsNullOrEmpty(p.ProofImagePath))
+                    {
+                        <button type="button" class="thumb-btn" data-view="@p.ProofImagePath" data-caption="@p.ReceiptNumber · Ref @p.ReferenceNumber · @Ui.Peso(p.Amount)"><img src="@p.ProofImagePath" alt="GCash proof" /></button>
+                    }
+                    else
+                    {
+                        <span class="no-proof">@p.Method</span>
+                    }
+                    <div>
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><b class="num">@Ui.Peso(p.Amount)</b> @Ui.Pill(p.Status)</div>
+                        <div class="hint">@p.Type · @p.Method @(p.ReferenceNumber != null ? "· Ref " : "")<span class="mono">@p.ReferenceNumber</span></div>
+                        <div class="hint"><span class="mono">@p.ReceiptNumber</span> · @Ui.Stamp(p.CreatedAt)</div>
+                        @if (p.VerifiedAt != null)
+                        {
+                            <div class="hint">@(p.Status == PaymentStatus.Rejected ? "Rejected" : "Verified") by @p.VerifiedBy · @Ui.Stamp(p.VerifiedAt.Value)</div>
+                        }
+                        @if (!string.IsNullOrEmpty(p.Remarks))
+                        {
+                            <div class="hint" style="color:var(--text-2)">“@p.Remarks”</div>
+                        }
+                    </div>
+                    <div class="row-actions">
+                        @if (p.Status == PaymentStatus.ForVerification)
+                        {
+                            <form class="inline-form" method="post" asp-action="VerifyPayment">
+                                <input type="hidden" name="id" value="@p.Id" /><input type="hidden" name="returnUrl" value="@here" />
+                                <button class="btn btn-sm btn-green"><svg><use href="#i-check" /></svg>Verify</button>
+                            </form>
+                            <button type="button" class="btn btn-sm btn-red" data-reject="@p.Id" data-label="@p.ReceiptNumber · @Ui.Peso(p.Amount)">Reject</button>
+                        }
+                        @if (p.Status == PaymentStatus.Verified)
+                        {
+                            <a class="btn btn-sm" href="@Url.Action("PrintReceipt", "Admin", new { id = p.Id })" target="_blank"><svg><use href="#i-print" /></svg>Receipt</a>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (isOpen && (Model.Balance > 0 || Model.TotalPrice <= 0))
+        {
+            <div class="card">
+                <div class="card-head"><div><h2>Record a payment</h2><p>For cash or GCash received outside the website. It is saved as verified.</p></div></div>
+                <form method="post" asp-action="RecordPayment" class="form-grid">
+                    <input type="hidden" name="transactionId" value="@Model.TransactionId" />
+                    <div class="form-row">
+                        <label for="amount">Amount (₱)</label>
+                        <input class="adm-input" id="amount" name="amount" type="number" min="1" step="0.01" value="@(Model.Balance > 0 ? Model.Balance.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) : "")" required />
+                    </div>
+                    <div class="form-row">
+                        <label for="method">Method</label>
+                        <select class="adm-select" id="method" name="method">
+                            <option>@PaymentMethod.Cash</option>
+                            <option>@PaymentMethod.GCash</option>
+                        </select>
+                    </div>
+                    <div class="form-row span-2">
+                        <label for="ref">Reference no. (optional)</label>
+                        <input class="adm-input" id="ref" name="referenceNumber" placeholder="GCash ref or OR number" />
+                    </div>
+                    <div class="span-2"><button class="btn btn-gold" type="submit"><svg><use href="#i-plus" /></svg>Record payment</button></div>
+                </form>
+            </div>
+        }
+    </div>
+</section>
+
+<partial name="_RejectDialog" model="here" />
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('[data-confirm-btn]').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                if (!confirm(btn.getAttribute('data-confirm-btn'))) e.preventDefault();
+            });
+        });
+    </script>
+}

@@ -1,0 +1,138 @@
+@{
+    var active = ViewData["Nav"] as string ?? "";
+    var isSuper = ViewBag.IsSuperAdmin == true;
+    int pendingPayments = ViewBag.PendingPaymentCount ?? 0;
+    int pendingBookings = ViewBag.PendingBookingCount ?? 0;
+    int? selectedPid = ViewBag.SelectedPhotographerId as int?;
+    var photographers = ViewBag.Photographers as List<VibeShootAdmin.Models.Admin.PhotographerOption> ?? new();
+    var showSwitcher = isSuper && ViewData["HideSwitcher"] == null;
+    var requireOne = ViewData["SwitcherRequired"] != null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] · VibeShoot Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/Admin.css" asp-append-version="true" />
+    @await RenderSectionAsync("Head", required: false)
+</head>
+<body class="adm">
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /></symbol>
+        <symbol id="i-cal" viewBox="0 0 24 24"><path d="M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm-1 5h16M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></symbol>
+        <symbol id="i-book" viewBox="0 0 24 24"><path d="M9 4h6M8 4H6a1 1 0 0 0-1 1v15a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-2M9 11h6M9 15h4M9 3h6v3H9z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></symbol>
+        <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2-2h11v4M4 7v11a2 2 0 0 0 2 2h14V9H6a2 2 0 0 1-2-2Zm12 7h.01" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></symbol>
+        <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></symbol>
+        <symbol id="i-image" viewBox="0 0 24 24"><path d="M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M15 9h.01" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></symbol>
+        <symbol id="i-cog" viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7.4-3a7.4 7.4 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7.3 7.3 0 0 0-2-1.2L14.5 3h-4l-.4 2.6a7.3 7.3 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7.4 7.4 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7.3 7.3 0 0 0 2 1.2l.4 2.6h4l.4-2.6a7.3 7.3 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" /></symbol>
+        <symbol id="i-out" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 8l-4 4 4 4M6 12h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></symbol>
+        <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></symbol>
+        <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 18H5a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2M7 14h10v7H7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /></symbol>
+        <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></symbol>
+        <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" /></symbol>
+        <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Zm10 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /></symbol>
+        <symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></symbol>
+        <symbol id="i-search" viewBox="0 0 24 24"><path d="m20 20-4.5-4.5M17 10.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></symbol>
+        <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></symbol>
+        <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z" fill="currentColor" /></symbol>
+        <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></symbol>
+    </svg>
+
+    <aside class="adm-side" id="admSide">
+        <a class="adm-brand" href="@Url.Action("Dashboard", "Admin")">
+            <span class="adm-brand-mark">V</span>
+            <span><b>VIBESHOOT</b><small>Studio Console</small></span>
+        </a>
+
+        <nav class="adm-nav">
+            <span class="adm-nav-label">Monitor</span>
+            <a class="@(active == "Dashboard" ? "active" : "")" href="@Url.Action("Dashboard", "Admin")"><svg><use href="#i-grid" /></svg>Overview</a>
+            <a class="@(active == "Schedule" ? "active" : "")" href="@Url.Action("Schedule", "Admin")"><svg><use href="#i-cal" /></svg>Schedule</a>
+            <a class="@(active == "Bookings" ? "active" : "")" href="@Url.Action("Bookings", "Admin")"><svg><use href="#i-book" /></svg>Bookings @if (pendingBookings > 0) {<span class="adm-badge">@pendingBookings</span>}</a>
+
+            <span class="adm-nav-label">Payments</span>
+            <a class="@(active == "Transactions" ? "active" : "")" href="@Url.Action("Transactions", "Admin")"><svg><use href="#i-wallet" /></svg>Transactions @if (pendingPayments > 0) {<span class="adm-badge gold">@pendingPayments</span>}</a>
+            <a class="@(active == "Receipts" ? "active" : "")" href="@Url.Action("Receipts", "Admin")"><svg><use href="#i-receipt" /></svg>Receipts</a>
+
+            <span class="adm-nav-label">Studio</span>
+            <a class="@(active == "Gallery" ? "active" : "")" href="@Url.Action("Gallery", "Admin")"><svg><use href="#i-image" /></svg>Gallery</a>
+            <a class="@(active == "Studio" ? "active" : "")" href="@Url.Action("Studio", "Admin")"><svg><use href="#i-cog" /></svg>Settings</a>
+        </nav>
+
+        <div class="adm-side-foot">
+            <a href="@Site.PublicUrl("/photographers")" target="_blank" rel="noopener"><svg><use href="#i-ext" /></svg>View public site</a>
+            <div class="adm-user">
+                <span class="adm-avatar">@((ViewBag.AdminName as string ?? "A")[..1].ToUpperInvariant())</span>
+                <span><b>@ViewBag.AdminName</b><small>@(isSuper ? "Super Admin" : "Photographer")</small></span>
+                <a href="@Url.Action("Logout", "Admin")" title="Sign out" aria-label="Sign out"><svg><use href="#i-out" /></svg></a>
+            </div>
+        </div>
+    </aside>
+    <div class="adm-scrim" id="admScrim"></div>
+
+    <main class="adm-main">
+        <header class="adm-top">
+            <button class="adm-icon-btn adm-menu" id="admMenu" aria-label="Open menu"><svg><use href="#i-menu" /></svg></button>
+            <div class="adm-top-title">
+                <h1>@ViewData["Title"]</h1>
+                @if (ViewData["Subtitle"] != null)
+                {
+                    <p>@ViewData["Subtitle"]</p>
+                }
+            </div>
+            <div class="adm-top-actions">
+                @if (showSwitcher)
+                {
+                    <label class="adm-switcher">
+                        <span class="sr-only">Photographer</span>
+                        <select id="photogSwitcher">
+                            @if (!requireOne)
+                            {
+                                <option value="">All photographers</option>
+                            }
+                            @foreach (var p in photographers)
+                            {
+                                <option value="@p.Id" selected="@(selectedPid == p.Id)">@p.Name</option>
+                            }
+                        </select>
+                    </label>
+                }
+                @await RenderSectionAsync("TopActions", required: false)
+            </div>
+        </header>
+
+        <div class="adm-content">
+            @RenderBody()
+        </div>
+    </main>
+
+    <div class="adm-toasts" id="admToasts">
+        @if (TempData["Toast"] != null)
+        {
+            <div class="adm-toast ok"><svg><use href="#i-check" /></svg><span>@TempData["Toast"]</span></div>
+        }
+        @if (TempData["ToastError"] != null)
+        {
+            <div class="adm-toast err"><svg><use href="#i-x" /></svg><span>@TempData["ToastError"]</span></div>
+        }
+    </div>
+
+    <!-- Shared image viewer for GCash proof screenshots -->
+    <div class="adm-viewer" id="admViewer" aria-hidden="true">
+        <button class="adm-viewer-close" type="button" aria-label="Close">&times;</button>
+        <figure>
+            <img id="admViewerImg" src="" alt="Payment proof" />
+            <figcaption id="admViewerCap"></figcaption>
+        </figure>
+    </div>
+
+    @Html.AntiForgeryToken()
+    <script src="~/js/Admin.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

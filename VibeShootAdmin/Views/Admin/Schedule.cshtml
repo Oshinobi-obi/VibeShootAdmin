@@ -1,0 +1,153 @@
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Schedule";
+    ViewData["Nav"] = "Schedule";
+    ViewData["Subtitle"] = "See every session at a glance and block days you're unavailable";
+    var pid = ViewBag.SelectedPhotographerId as int?;
+}
+
+<section class="grid grid-3-1">
+    <div class="card">
+        <div class="cal-head">
+            <button class="adm-icon-btn" id="calPrev" aria-label="Previous month"><svg viewBox="0 0 24 24"><path d="M14.7 5.3 8 12l6.7 6.7 1.4-1.4L10.8 12l5.3-5.3z" fill="currentColor" /></svg></button>
+            <h2 id="calTitle">—</h2>
+            <div style="display:flex;gap:8px;">
+                <button class="btn btn-sm" id="calToday">Today</button>
+                <button class="adm-icon-btn" id="calNext" aria-label="Next month"><svg viewBox="0 0 24 24"><path d="M9.3 5.3 16 12l-6.7 6.7-1.4-1.4L13.2 12 7.9 6.7z" fill="currentColor" /></svg></button>
+            </div>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-legend">
+            <span><i style="background:var(--amber)"></i>Pending</span>
+            <span><i style="background:var(--blue)"></i>Confirmed</span>
+            <span><i style="background:var(--green)"></i>Completed</span>
+            <span><i style="background:repeating-linear-gradient(135deg, var(--red) 0 2px, transparent 2px 4px);border:1px solid var(--red)"></i>Blocked / day off</span>
+        </div>
+    </div>
+
+    <div class="card day-panel" id="dayPanel">
+        <h3 id="dayTitle">Select a day</h3>
+        <div class="sub" id="daySub">Click any date on the calendar to see its sessions.</div>
+        <div id="daySessions"></div>
+        <div id="dayActions" style="display:none;">
+            <div class="form-row" id="reasonRow">
+                <label for="blockReason">Reason (optional)</label>
+                <input class="adm-input" id="blockReason" placeholder="e.g. Out of town, family event" />
+            </div>
+            <button class="btn btn-block" id="blockBtn"></button>
+            @if (pid == null && ViewBag.IsSuperAdmin == true)
+            {
+                <p class="hint" style="margin-top:10px;">To block a date, pick a photographer from the switcher above first.</p>
+            }
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        (function () {
+            var photographerId = @(pid?.ToString() ?? "null");
+            var months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+            var dows = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+            var view = new Date(); view.setDate(1);
+            var data = { bookings: [], blocked: [] };
+            var selected = null;
+
+            var grid = document.getElementById('calGrid');
+            var title = document.getElementById('calTitle');
+
+            function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+            function shortTime(t) { return t.split(' – ')[0].replace(':00', '').replace(' AM', 'a').replace(' PM', 'p'); }
+            function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+
+            async function load() {
+                var url = '/Admin/GetScheduleData?year=' + view.getFullYear() + '&month=' + (view.getMonth() + 1) + (photographerId ? '&photographerId=' + photographerId : '');
+                var res = await fetch(url);
+                data = await res.json();
+                render();
+                if (selected) showDay(selected);
+            }
+
+            function render() {
+                title.textContent = months[view.getMonth()] + ' ' + view.getFullYear();
+                grid.innerHTML = '';
+                dows.forEach(function (d) { var el = document.createElement('div'); el.className = 'cal-dow'; el.textContent = d; grid.appendChild(el); });
+
+                var start = new Date(view); start.setDate(1 - view.getDay());
+                var todayIso = iso(new Date());
+                for (var i = 0; i < 42; i++) {
+                    var d = new Date(start); d.setDate(start.getDate() + i);
+                    if (i >= 35 && d.getMonth() !== view.getMonth()) break;
+                    var key = iso(d);
+                    var cell = document.createElement('button');
+                    cell.type = 'button';
+                    cell.className = 'cal-cell';
+                    if (d.getMonth() !== view.getMonth()) cell.classList.add('out');
+                    if (key < todayIso) cell.classList.add('past');
+                    if (key === todayIso) cell.classList.add('today');
+                    if (key === selected) cell.classList.add('selected');
+
+                    var blocked = data.blocked.filter(function (b) { return b.date === key; });
+                    if (blocked.length) cell.classList.add('blocked');
+
+                    var html = '<span class="cal-num">' + d.getDate() + (blocked.length ? '<em>Off</em>' : '') + '</span>';
+                    data.bookings.filter(function (b) { return b.date === key; }).forEach(function (b) {
+                        html += '<span class="cal-evt s-' + b.status + '" title="' + esc(b.time + ' · ' + b.client) + '">' + esc(shortTime(b.time) + ' ' + b.client.split(' ')[0]) + '</span>';
+                    });
+                    cell.innerHTML = html;
+                    cell.setAttribute('aria-label', d.toDateString());
+                    (function (k) { cell.addEventListener('click', function () { selected = k; render(); showDay(k); }); })(key);
+                    grid.appendChild(cell);
+                }
+            }
+
+            function showDay(key) {
+                var d = new Date(key + 'T00:00:00');
+                var sessions = data.bookings.filter(function (b) { return b.date === key; });
+                var blocked = data.blocked.filter(function (b) { return b.date === key; });
+                document.getElementById('dayTitle').textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+                document.getElementById('daySub').textContent = sessions.length + ' session' + (sessions.length === 1 ? '' : 's') + (blocked.length ? ' · marked unavailable' + (blocked[0].reason ? ' (' + blocked[0].reason + ')' : '') : '');
+
+                var list = document.getElementById('daySessions');
+                list.innerHTML = sessions.length ? '' : '<div class="empty" style="padding:24px 0;"><b>No sessions</b>This day is free.</div>';
+                sessions.forEach(function (b) {
+                    var a = document.createElement('a');
+                    a.className = 'session';
+                    a.href = '/Admin/BookingDetails/' + encodeURIComponent(b.id);
+                    a.innerHTML = '<span class="t">' + esc(b.time) + '</span><b>' + esc(b.client) + '</b><small>' + esc(b.package) + ' · ' + esc(b.venue) + (photographerId ? '' : ' · ' + esc(b.photographer)) + '</small><div style="margin-top:6px;"><span class="pill pill-' + b.status.toLowerCase() + '">' + esc(b.status) + '</span></div>';
+                    list.appendChild(a);
+                });
+
+                var actions = document.getElementById('dayActions');
+                var btn = document.getElementById('blockBtn');
+                var isPast = key < iso(new Date());
+                actions.style.display = isPast ? 'none' : 'block';
+                document.getElementById('reasonRow').style.display = blocked.length ? 'none' : 'flex';
+                btn.disabled = !photographerId;
+                btn.className = 'btn btn-block ' + (blocked.length ? 'btn-green' : 'btn-red');
+                btn.textContent = blocked.length ? 'Mark as available again' : 'Block this date (day off)';
+                if (!blocked.length && sessions.length) btn.textContent = 'Block remaining slots on this date';
+            }
+
+            document.getElementById('blockBtn').addEventListener('click', async function () {
+                if (!selected || !photographerId) return;
+                var res = await fetch('/Admin/ToggleBlockDate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': vsToken() },
+                    body: JSON.stringify({ date: selected, photographerId: photographerId, reason: document.getElementById('blockReason').value })
+                });
+                var json = await res.json().catch(function () { return {}; });
+                if (!res.ok) { vsToast(json.error || 'Could not update the date.', true); return; }
+                document.getElementById('blockReason').value = '';
+                vsToast(json.blocked ? 'Date blocked — clients can no longer book it.' : 'Date is open for bookings again.');
+                load();
+            });
+
+            document.getElementById('calPrev').addEventListener('click', function () { view.setMonth(view.getMonth() - 1); load(); });
+            document.getElementById('calNext').addEventListener('click', function () { view.setMonth(view.getMonth() + 1); load(); });
+            document.getElementById('calToday').addEventListener('click', function () { view = new Date(); view.setDate(1); selected = iso(new Date()); load(); });
+
+            load();
+        })();
+    </script>
+}

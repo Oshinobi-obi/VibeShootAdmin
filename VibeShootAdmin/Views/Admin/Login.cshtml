@@ -1,0 +1,69 @@
+@model VibeShootAdmin.Models.Admin.AdminLoginViewModel
+@{
+    Layout = null;
+    var art = ViewBag.LoginArt as string;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign in · VibeShoot Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/Admin.css" asp-append-version="true" />
+</head>
+<body class="adm">
+    <div class="login-wrap">
+        <div class="login-art">
+            @if (!string.IsNullOrEmpty(art))
+            {
+                <img src="@art" alt="" />
+            }
+            <div class="quote">
+                <b>Every frame,<br />on schedule.</b>
+                <span>Manage bookings, verify GCash payments and print receipts — all in one place.</span>
+            </div>
+        </div>
+
+        <div class="login-panel">
+            <div class="login-card">
+                <span class="adm-wordmark" aria-label="VibeShoot">VIBESHOOT</span>
+                <span class="adm-wordmark-sub">Studio Console</span>
+                <p class="login-lead">Sign in to manage your schedule and payments.</p>
+
+                @if (!string.IsNullOrEmpty(Model?.ErrorMessage))
+                {
+                    <div class="alert alert-err" role="alert">@Model.ErrorMessage</div>
+                }
+
+                <form asp-controller="Admin" asp-action="Login" method="post">
+                    <div class="form-row">
+                        <label for="Username">Username</label>
+                        <input class="adm-input" id="Username" name="Username" value="@Model?.Username" required autocomplete="username" autofocus />
+                    </div>
+                    <div class="form-row">
+                        <label for="Password">Password</label>
+                        <div class="pw-field">
+                            <input class="adm-input" id="Password" type="password" name="Password" required autocomplete="current-password" />
+                            <button type="button" id="pwToggle" aria-label="Show password">
+                                <svg viewBox="0 0 24 24" width="18" height="18"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Zm10 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" fill="none" stroke="currentColor" stroke-width="1.8" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-gold">Sign in</button>
+                </form>
+
+                <p class="hint" style="margin-top:22px;"><a href="@Site.PublicUrl("/photographers")">&larr; Back to the VibeShoot site</a></p>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('pwToggle').addEventListener('click', function () {
+            var pw = document.getElementById('Password');
+            pw.type = pw.type === 'password' ? 'text' : 'password';
+        });
+    </script>
+</body>
+</html>
