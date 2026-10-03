@@ -117,3 +117,15 @@ table.rc-table { width: 100%; border-collapse: collapse; margin: 18px 0 6px; fon
     .rc-status, .rc-note, .rc-paid-stamp { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .rc-table tr { break-inside: avoid; }
 }
+
+/* No visible scrollbars anywhere (pages still scroll with wheel, touch and keyboard). */
+html, body, * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+    *::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
+    }

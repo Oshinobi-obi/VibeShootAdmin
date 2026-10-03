@@ -32,7 +32,7 @@
                     <button type="button" class="star @(img.IsFeatured ? "on" : "")" data-feature="@img.Id" title="Feature on the photographer card and sign-in screen" aria-label="Toggle featured"><svg><use href="#i-star" /></svg></button>
                     <div class="ov">
                         <small>@img.Category · @((img.FileSizeBytes / 1024.0).ToString("0"))&nbsp;KB</small>
-                        <form class="inline-form" method="post" asp-action="DeleteGalleryImage" asp-route-id="@img.Id" asp-route-category="@Model.Category" data-confirm="Delete this photo permanently?">
+                        <form autocomplete="off" class="inline-form" method="post" asp-action="DeleteGalleryImage" asp-route-id="@img.Id" asp-route-category="@Model.Category" data-confirm="Delete this photo permanently?">
                             <button class="btn btn-sm btn-red" type="submit" aria-label="Delete photo"><svg><use href="#i-trash" /></svg></button>
                         </form>
                     </div>
@@ -43,7 +43,7 @@
 
     <div class="card" style="align-self:start;">
         <div class="card-head"><div><h2>Upload photos</h2><p>JPG, PNG or WEBP · large photos are resized automatically</p></div></div>
-        <form method="post" asp-action="UploadGallery" enctype="multipart/form-data" id="uploadForm">
+        <form autocomplete="off" method="post" asp-action="UploadGallery" enctype="multipart/form-data" id="uploadForm">
             <input type="hidden" name="photographerId" value="@Model.PhotographerId" />
             <div class="form-row">
                 <label for="category">Album</label>

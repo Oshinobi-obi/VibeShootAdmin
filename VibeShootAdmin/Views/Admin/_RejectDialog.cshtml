@@ -1,6 +1,6 @@
 @model string
 <dialog class="adm-dialog" id="rejectDialog">
-    <form method="post" action="@Url.Action("RejectPayment", "Admin")">
+    <form autocomplete="off" method="post" action="@Url.Action("RejectPayment", "Admin")">
         @Html.AntiForgeryToken()
         <input type="hidden" name="id" />
         <input type="hidden" name="returnUrl" value="@Model" />
@@ -8,7 +8,7 @@
         <p data-reject-label></p>
         <div class="form-row">
             <label for="rejectRemarks">Reason (shown to the client)</label>
-            <textarea class="adm-textarea" id="rejectRemarks" name="remarks" placeholder="e.g. Reference number not found in GCash history / amount does not match"></textarea>
+            <textarea autocomplete="off" class="adm-textarea" id="rejectRemarks" name="remarks" placeholder="e.g. Reference number not found in GCash history / amount does not match"></textarea>
         </div>
         <div class="dialog-actions">
             <button type="button" class="btn btn-ghost" data-cancel>Cancel</button>

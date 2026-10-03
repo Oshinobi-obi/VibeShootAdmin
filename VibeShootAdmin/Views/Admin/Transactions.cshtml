@@ -58,20 +58,20 @@
 </div>
 
 <div class="card">
-    <form class="filters" method="get">
+    <form autocomplete="off" class="filters" method="get">
         <input type="hidden" name="status" value="@f.Status" />
         @if (f.PhotographerId != null) { <input type="hidden" name="photographerId" value="@f.PhotographerId" /> }
         <div class="search">
             <svg><use href="#i-search" /></svg>
-            <input class="adm-input" name="q" value="@f.Q" placeholder="Search receipt no., GCash reference, transaction ID or client" />
+            <input autocomplete="off" class="adm-input" name="q" value="@f.Q" placeholder="Search receipt no., GCash reference, transaction ID or client" />
         </div>
         <select class="adm-select" name="method" aria-label="Payment method">
             <option value="">All methods</option>
             <option selected="@(f.Method == PaymentMethod.GCash)">@PaymentMethod.GCash</option>
             <option selected="@(f.Method == PaymentMethod.Cash)">@PaymentMethod.Cash</option>
         </select>
-        <label class="date">From <input class="adm-input" type="date" name="from" value="@f.From?.ToString("yyyy-MM-dd")" /></label>
-        <label class="date">to <input class="adm-input" type="date" name="to" value="@f.To?.ToString("yyyy-MM-dd")" /></label>
+        <label class="date">From <input autocomplete="off" class="adm-input" type="date" name="from" value="@f.From?.ToString("yyyy-MM-dd")" /></label>
+        <label class="date">to <input autocomplete="off" class="adm-input" type="date" name="to" value="@f.To?.ToString("yyyy-MM-dd")" /></label>
         <button class="btn" type="submit">Filter</button>
     </form>
 
@@ -128,7 +128,7 @@
                                 <div class="row-actions">
                                     @if (p.Status == PaymentStatus.ForVerification)
                                     {
-                                        <form class="inline-form" method="post" asp-action="VerifyPayment">
+                                        <form autocomplete="off" class="inline-form" method="post" asp-action="VerifyPayment">
                                             <input type="hidden" name="id" value="@p.Id" /><input type="hidden" name="returnUrl" value="@here" />
                                             <button class="btn btn-sm btn-green" title="Verify"><svg><use href="#i-check" /></svg>Verify</button>
                                         </form>

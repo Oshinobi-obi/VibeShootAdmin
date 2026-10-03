@@ -42,11 +42,11 @@
 
         <div class="card">
             <div class="card-head"><div><h2>Change your password</h2><p>Signed in as @ViewBag.AdminName</p></div></div>
-            <form method="post" asp-action="ChangePassword">
-                <div class="form-row"><label for="cp">Current password</label><input class="adm-input" id="cp" type="password" name="currentPassword" required autocomplete="current-password" /></div>
+            <form autocomplete="off" method="post" asp-action="ChangePassword">
+                <div class="form-row"><label for="cp">Current password</label><input class="adm-input" id="cp" type="password" name="currentPassword" required autocomplete="off" /></div>
                 <div class="form-grid">
-                    <div class="form-row"><label for="np">New password</label><input class="adm-input" id="np" type="password" name="newPassword" minlength="8" required autocomplete="new-password" /></div>
-                    <div class="form-row"><label for="np2">Confirm</label><input class="adm-input" id="np2" type="password" name="confirmPassword" minlength="8" required autocomplete="new-password" /></div>
+                    <div class="form-row"><label for="np">New password</label><input class="adm-input" id="np" type="password" name="newPassword" minlength="8" required autocomplete="off" /></div>
+                    <div class="form-row"><label for="np2">Confirm</label><input class="adm-input" id="np2" type="password" name="confirmPassword" minlength="8" required autocomplete="off" /></div>
                 </div>
                 <button class="btn" type="submit">Update password</button>
             </form>
@@ -67,10 +67,10 @@
                 </div>
                 <details>
                     <summary class="btn btn-sm"><svg><use href="#i-plus" /></svg>New account</summary>
-                    <form method="post" asp-action="CreateAccount" style="margin-top:14px;">
+                    <form autocomplete="off" method="post" asp-action="CreateAccount" style="margin-top:14px;">
                         <div class="form-grid">
-                            <div class="form-row"><label for="nu">Username</label><input class="adm-input" id="nu" name="username" minlength="3" required /></div>
-                            <div class="form-row"><label for="npw">Password</label><input class="adm-input" id="npw" type="password" name="password" minlength="8" required autocomplete="new-password" /></div>
+                            <div class="form-row"><label for="nu">Username</label><input autocomplete="off" class="adm-input" id="nu" name="username" minlength="3" required /></div>
+                            <div class="form-row"><label for="npw">Password</label><input class="adm-input" id="npw" type="password" name="password" minlength="8" required autocomplete="off" /></div>
                             <div class="form-row span-2">
                                 <label for="nph">Access</label>
                                 <select class="adm-select" id="nph" name="photographerId">
@@ -92,20 +92,20 @@
     <div class="stack">
         <div class="card">
             <div class="card-head"><div><h2>Studio profile</h2><p>Appears on the About page and receipts</p></div></div>
-            <form method="post" asp-action="UpdateProfile" enctype="multipart/form-data">
+            <form autocomplete="off" method="post" asp-action="UpdateProfile" enctype="multipart/form-data">
                 <input type="hidden" name="Id" value="@p.Id" />
                 <div class="form-grid">
-                    <div class="form-row"><label for="Name">Studio name</label><input class="adm-input" id="Name" name="Name" value="@p.Name" required /></div>
-                    <div class="form-row"><label for="Tagline">Tagline</label><input class="adm-input" id="Tagline" name="Tagline" value="@p.Tagline" maxlength="256" /></div>
-                    <div class="form-row span-2"><label for="Bio">Bio</label><textarea class="adm-textarea" id="Bio" name="Bio" rows="5">@p.Bio</textarea></div>
-                    <div class="form-row"><label for="GCashAccountName">GCash account name</label><input class="adm-input" id="GCashAccountName" name="GCashAccountName" value="@p.GCashAccountName" placeholder="e.g. MC***Y R." /></div>
-                    <div class="form-row"><label for="GCashNumber">GCash number</label><input class="adm-input" id="GCashNumber" name="GCashNumber" value="@p.GCashNumber" placeholder="09XX-XXX-XXXX" /></div>
+                    <div class="form-row"><label for="Name">Studio name</label><input autocomplete="off" class="adm-input" id="Name" name="Name" value="@p.Name" required /></div>
+                    <div class="form-row"><label for="Tagline">Tagline</label><input autocomplete="off" class="adm-input" id="Tagline" name="Tagline" value="@p.Tagline" maxlength="256" /></div>
+                    <div class="form-row span-2"><label for="Bio">Bio</label><textarea autocomplete="off" class="adm-textarea" id="Bio" name="Bio" rows="5">@p.Bio</textarea></div>
+                    <div class="form-row"><label for="GCashAccountName">GCash account name</label><input autocomplete="off" class="adm-input" id="GCashAccountName" name="GCashAccountName" value="@p.GCashAccountName" placeholder="e.g. MC***Y R." /></div>
+                    <div class="form-row"><label for="GCashNumber">GCash number</label><input autocomplete="off" class="adm-input" id="GCashNumber" name="GCashNumber" value="@p.GCashNumber" placeholder="09XX-XXX-XXXX" /></div>
                     <div class="form-row"><label for="Logo">Logo</label><input class="adm-input" id="Logo" type="file" name="Logo" accept="image/*" data-shrink data-shrink-max="800" /></div>
                     <div class="form-row"><label for="GCashQr">GCash QR code</label><input class="adm-input" id="GCashQr" type="file" name="GCashQr" accept="image/*" data-shrink data-shrink-max="1200" data-shrink-quality="0.92" /></div>
-                    <div class="form-row"><label for="FacebookUrl">Facebook</label><input class="adm-input" id="FacebookUrl" name="FacebookUrl" value="@p.FacebookUrl" type="url" /></div>
-                    <div class="form-row"><label for="InstagramUrl">Instagram</label><input class="adm-input" id="InstagramUrl" name="InstagramUrl" value="@p.InstagramUrl" type="url" /></div>
-                    <div class="form-row"><label for="TikTokUrl">TikTok</label><input class="adm-input" id="TikTokUrl" name="TikTokUrl" value="@p.TikTokUrl" type="url" /></div>
-                    <div class="form-row"><label for="XUrl">X / Twitter</label><input class="adm-input" id="XUrl" name="XUrl" value="@p.XUrl" type="url" /></div>
+                    <div class="form-row"><label for="FacebookUrl">Facebook</label><input autocomplete="off" class="adm-input" id="FacebookUrl" name="FacebookUrl" value="@p.FacebookUrl" type="url" /></div>
+                    <div class="form-row"><label for="InstagramUrl">Instagram</label><input autocomplete="off" class="adm-input" id="InstagramUrl" name="InstagramUrl" value="@p.InstagramUrl" type="url" /></div>
+                    <div class="form-row"><label for="TikTokUrl">TikTok</label><input autocomplete="off" class="adm-input" id="TikTokUrl" name="TikTokUrl" value="@p.TikTokUrl" type="url" /></div>
+                    <div class="form-row"><label for="XUrl">X / Twitter</label><input autocomplete="off" class="adm-input" id="XUrl" name="XUrl" value="@p.XUrl" type="url" /></div>
                     @if (isSuper)
                     {
                         <label class="span-2 hint" style="display:flex;gap:8px;align-items:center;margin-bottom:14px;">
@@ -137,7 +137,7 @@
                         <ul>@foreach (var line in k.InclusionList) { <li>@line</li> }</ul>
                         <details class="pkg-edit">
                             <summary>Edit package</summary>
-                            <form method="post" asp-action="SavePackage">
+                            <form autocomplete="off" method="post" asp-action="SavePackage">
                                 <input type="hidden" name="Id" value="@k.Id" />
                                 <input type="hidden" name="PhotographerId" value="@p.Id" />
                                 <partial name="_PackageFields" model="k" />
@@ -152,7 +152,7 @@
             }
             <details class="pkg-edit" style="margin-top:12px;">
                 <summary class="btn btn-sm"><svg><use href="#i-plus" /></svg>Add package</summary>
-                <form method="post" asp-action="SavePackage">
+                <form autocomplete="off" method="post" asp-action="SavePackage">
                     <input type="hidden" name="PhotographerId" value="@p.Id" />
                     <partial name="_PackageFields" model="new ServicePackage { DurationHours = 3 }" />
                     <button class="btn btn-gold" type="submit">Add package</button>

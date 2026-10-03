@@ -11,14 +11,14 @@
 
 <section class="grid grid-3-1">
     <div class="card">
-        <form class="filters" method="get">
+        <form autocomplete="off" class="filters" method="get">
             @if (f.PhotographerId != null) { <input type="hidden" name="photographerId" value="@f.PhotographerId" /> }
             <div class="search">
                 <svg><use href="#i-search" /></svg>
-                <input class="adm-input" name="q" value="@f.Q" placeholder="Search receipt no., reference, client" />
+                <input autocomplete="off" class="adm-input" name="q" value="@f.Q" placeholder="Search receipt no., reference, client" />
             </div>
-            <label class="date">From <input class="adm-input" type="date" name="from" value="@f.From?.ToString("yyyy-MM-dd")" /></label>
-            <label class="date">to <input class="adm-input" type="date" name="to" value="@f.To?.ToString("yyyy-MM-dd")" /></label>
+            <label class="date">From <input autocomplete="off" class="adm-input" type="date" name="from" value="@f.From?.ToString("yyyy-MM-dd")" /></label>
+            <label class="date">to <input autocomplete="off" class="adm-input" type="date" name="to" value="@f.To?.ToString("yyyy-MM-dd")" /></label>
             <button class="btn" type="submit">Filter</button>
         </form>
 
@@ -65,10 +65,10 @@
         </div>
         <div class="card">
             <div class="card-head"><div><h2>Collection report</h2><p>Printable summary of verified payments</p></div></div>
-            <form method="get" action="@Url.Action("PrintReport", "Admin")" target="_blank">
+            <form autocomplete="off" method="get" action="@Url.Action("PrintReport", "Admin")" target="_blank">
                 @if (f.PhotographerId != null) { <input type="hidden" name="photographerId" value="@f.PhotographerId" /> }
-                <div class="form-row"><label for="rf">From</label><input class="adm-input" id="rf" type="date" name="from" value="@reportFrom" /></div>
-                <div class="form-row"><label for="rt">To</label><input class="adm-input" id="rt" type="date" name="to" value="@reportTo" /></div>
+                <div class="form-row"><label for="rf">From</label><input autocomplete="off" class="adm-input" id="rf" type="date" name="from" value="@reportFrom" /></div>
+                <div class="form-row"><label for="rt">To</label><input autocomplete="off" class="adm-input" id="rt" type="date" name="to" value="@reportTo" /></div>
                 <button class="btn btn-gold btn-block" type="submit"><svg><use href="#i-print" /></svg>Generate &amp; print</button>
             </form>
         </div>

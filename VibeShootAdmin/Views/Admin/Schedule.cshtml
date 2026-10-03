@@ -32,7 +32,7 @@
         <div id="dayActions" style="display:none;">
             <div class="form-row" id="reasonRow">
                 <label for="blockReason">Reason (optional)</label>
-                <input class="adm-input" id="blockReason" placeholder="e.g. Out of town, family event" />
+                <input autocomplete="off" class="adm-input" id="blockReason" placeholder="e.g. Out of town, family event" />
             </div>
             <button class="btn btn-block" id="blockBtn"></button>
             @if (pid == null && ViewBag.IsSuperAdmin == true)

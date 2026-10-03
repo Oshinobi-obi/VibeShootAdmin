@@ -29,15 +29,15 @@
 </div>
 
 <div class="card">
-    <form class="filters" method="get">
+    <form autocomplete="off" class="filters" method="get">
         <input type="hidden" name="status" value="@f.Status" />
         @if (f.PhotographerId != null) { <input type="hidden" name="photographerId" value="@f.PhotographerId" /> }
         <div class="search">
             <svg><use href="#i-search" /></svg>
-            <input class="adm-input" name="q" value="@f.Q" placeholder="Search client, transaction ID, mobile or venue" />
+            <input autocomplete="off" class="adm-input" name="q" value="@f.Q" placeholder="Search client, transaction ID, mobile or venue" />
         </div>
-        <label class="date">Shoot date <input class="adm-input" type="date" name="from" value="@f.From?.ToString("yyyy-MM-dd")" /></label>
-        <label class="date">to <input class="adm-input" type="date" name="to" value="@f.To?.ToString("yyyy-MM-dd")" /></label>
+        <label class="date">Shoot date <input autocomplete="off" class="adm-input" type="date" name="from" value="@f.From?.ToString("yyyy-MM-dd")" /></label>
+        <label class="date">to <input autocomplete="off" class="adm-input" type="date" name="to" value="@f.To?.ToString("yyyy-MM-dd")" /></label>
         <button class="btn" type="submit">Filter</button>
         @if (!string.IsNullOrEmpty(f.Q) || f.From != null || f.To != null)
         {

@@ -440,9 +440,6 @@ dialog.adm-dialog p { color: var(--text-2); margin: 0 0 14px; font-size: 0.86rem
 }
 
 /* Compact tables on mid-size screens */
-.table-wrap { scrollbar-width: thin; scrollbar-color: var(--surface-3) transparent; }
-.table-wrap::-webkit-scrollbar { height: 8px; }
-.table-wrap::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 4px; }
 @media (max-width: 1280px) {
     .hide-md { display: none; }
     .tbl td, .tbl th { padding-left: 8px; padding-right: 8px; }
@@ -475,3 +472,15 @@ dialog.adm-dialog p { color: var(--text-2); margin: 0 0 14px; font-size: 0.86rem
 .adm-wordmark-sub::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(201,162,39,0.5), transparent); }
 .login-card .login-lead { margin-top: 14px; }
 @keyframes wordmark-sheen { 0%, 100% { background-position: 100% 0; } 50% { background-position: 0 0; } }
+
+/* No visible scrollbars anywhere (pages still scroll with wheel, touch and keyboard). */
+html, body, * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+    *::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
+    }

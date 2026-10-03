@@ -59,11 +59,11 @@
 
         <div class="card">
             <div class="card-head"><h2>Update status</h2></div>
-            <form method="post" asp-action="UpdateStatus">
+            <form autocomplete="off" method="post" asp-action="UpdateStatus">
                 <input type="hidden" name="transactionId" value="@Model.TransactionId" />
                 <div class="form-row">
                     <label for="remarks">Remarks (shown to the client on their receipt)</label>
-                    <textarea class="adm-textarea" id="remarks" name="remarks" placeholder="Optional note, e.g. reason for declining">@Model.AdminRemarks</textarea>
+                    <textarea autocomplete="off" class="adm-textarea" id="remarks" name="remarks" placeholder="Optional note, e.g. reason for declining">@Model.AdminRemarks</textarea>
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     @if (Model.Status == BookingStatus.Pending)
@@ -138,7 +138,7 @@
                     <div class="row-actions">
                         @if (p.Status == PaymentStatus.ForVerification)
                         {
-                            <form class="inline-form" method="post" asp-action="VerifyPayment">
+                            <form autocomplete="off" class="inline-form" method="post" asp-action="VerifyPayment">
                                 <input type="hidden" name="id" value="@p.Id" /><input type="hidden" name="returnUrl" value="@here" />
                                 <button class="btn btn-sm btn-green"><svg><use href="#i-check" /></svg>Verify</button>
                             </form>
@@ -157,11 +157,11 @@
         {
             <div class="card">
                 <div class="card-head"><div><h2>Record a payment</h2><p>For cash or GCash received outside the website. It is saved as verified.</p></div></div>
-                <form method="post" asp-action="RecordPayment" class="form-grid">
+                <form autocomplete="off" method="post" asp-action="RecordPayment" class="form-grid">
                     <input type="hidden" name="transactionId" value="@Model.TransactionId" />
                     <div class="form-row">
                         <label for="amount">Amount (₱)</label>
-                        <input class="adm-input" id="amount" name="amount" type="number" min="1" step="0.01" value="@(Model.Balance > 0 ? Model.Balance.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) : "")" required />
+                        <input autocomplete="off" class="adm-input" id="amount" name="amount" type="number" min="1" step="0.01" value="@(Model.Balance > 0 ? Model.Balance.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) : "")" required />
                     </div>
                     <div class="form-row">
                         <label for="method">Method</label>
@@ -172,7 +172,7 @@
                     </div>
                     <div class="form-row span-2">
                         <label for="ref">Reference no. (optional)</label>
-                        <input class="adm-input" id="ref" name="referenceNumber" placeholder="GCash ref or OR number" />
+                        <input autocomplete="off" class="adm-input" id="ref" name="referenceNumber" placeholder="GCash ref or OR number" />
                     </div>
                     <div class="span-2"><button class="btn btn-gold" type="submit"><svg><use href="#i-plus" /></svg>Record payment</button></div>
                 </form>
