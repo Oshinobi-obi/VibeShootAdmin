@@ -92,8 +92,13 @@
                 <div><h2>Payment summary</h2><p>Down payment required: @Ui.Peso(Model.DownPaymentRequired) (50%)</p></div>
                 @Ui.Pill(Model.PaymentState)
             </div>
+            @if (Model.DiscountAmount > 0)
+            {
+                <div class="money-row"><span>Regular price</span><span>@Ui.Peso(Model.OriginalPrice)</span></div>
+                <div class="money-row"><span>@(Model.DiscountLabel ?? "Discount")</span><span style="color:var(--green)">- @Ui.Peso(Model.DiscountAmount)</span></div>
+            }
             <div class="money-row"><span>Package price</span><span>@(Model.TotalPrice > 0 ? Ui.Peso(Model.TotalPrice) : "Custom quote")</span></div>
-            <div class="money-row"><span>Verified payments</span><span style="color:var(--green)">− @Ui.Peso(Model.AmountPaid)</span></div>
+            <div class="money-row"><span>Paid so far (verified)</span><span style="color:var(--green)">@Ui.Peso(Model.AmountPaid)</span></div>
             @if (Model.AmountForVerification > 0)
             {
                 <div class="money-row"><span>Awaiting verification</span><span style="color:var(--amber)">@Ui.Peso(Model.AmountForVerification)</span></div>

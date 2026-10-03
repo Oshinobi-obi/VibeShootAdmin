@@ -513,3 +513,14 @@ html, body, * {
 
 /* Live-refreshed content: no entrance animations (avoids charts re-growing every refresh). */
 .adm-content.live, .adm-content.live * { animation: none !important; }
+
+/* ---------- Discounts ---------- */
+.disc-box { border: 1px dashed var(--line-strong); border-radius: 12px; padding: 12px 14px 4px; margin: 4px 0 14px; }
+.disc-box legend { padding: 0 6px; font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold-2); }
+.disc-box legend .hint { text-transform: none; letter-spacing: 0; }
+.disc-box:not(.has-disc) .disc-only { display: none; }
+.pkg-top .price s { color: var(--text-3); font-weight: 400; margin-right: 4px; }
+.pkg-disc { margin-top: 6px; font-size: 0.78rem; color: var(--text-3); }
+.pkg-disc b { color: var(--text-2); }
+.pkg-disc.on b { color: #ff9a9a; }
+.bulk-disc { margin-bottom: 14px; }

@@ -282,3 +282,16 @@
     render();
     poll();
 })();
+
+
+// Discount fields: only show the details once a discount type is chosen.
+(function () {
+    function sync(box) {
+        var sel = box.querySelector('[data-discount-type]');
+        box.classList.toggle('has-disc', !!(sel && sel.value));
+    }
+    document.querySelectorAll('[data-discount]').forEach(sync);
+    document.addEventListener('change', function (e) {
+        if (e.target.matches('[data-discount-type]')) sync(e.target.closest('[data-discount]'));
+    });
+})();

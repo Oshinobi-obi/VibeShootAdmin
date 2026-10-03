@@ -782,14 +782,59 @@ namespace VibeShootAdmin.Controllers
                 _context.Packages.Add(pkg);
             }
 
+            var discountError = ValidateDiscount(form.DiscountType, form.DiscountValue, form.DiscountStart, form.DiscountEnd, Math.Round(form.Price, 2));
+            if (discountError != null)
+            {
+                TempData["ToastError"] = discountError;
+                return RedirectToAction(nameof(Studio), new { photographerId = form.PhotographerId });
+            }
+
             pkg.Category = form.Category;
             pkg.Name = form.Name.Trim();
             pkg.Price = Math.Round(form.Price, 2);
             pkg.DurationHours = form.DurationHours;
             pkg.Inclusions = form.Inclusions?.Trim() ?? "";
+            ApplyDiscount(pkg, form.DiscountType, form.DiscountValue, form.DiscountLabel, form.DiscountStart, form.DiscountEnd);
             await _context.SaveChangesAsync();
 
             TempData["Toast"] = $"Package \"{pkg.Name}\" saved.";
+            return RedirectToAction(nameof(Studio), new { photographerId = form.PhotographerId });
+        }
+
+        /// <summary>Turns a discount on (or off) for every priced package of one photographer.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApplyDiscountToAll(BulkDiscountForm form)
+        {
+            if (!User.CanAccess(form.PhotographerId)) return Forbid();
+
+            var packages = await _context.Packages
+                .Where(p => p.PhotographerId == form.PhotographerId && p.IsActive && p.Price > 0)
+                .ToListAsync();
+
+            if (form.Remove)
+            {
+                foreach (var p in packages) ApplyDiscount(p, null, 0, null, null, null);
+                await _context.SaveChangesAsync();
+                TempData["Toast"] = "Discounts removed. Clients now see your regular rates.";
+                return RedirectToAction(nameof(Studio), new { photographerId = form.PhotographerId });
+            }
+
+            var cheapest = packages.Count == 0 ? 0 : packages.Min(p => p.Price);
+            var error = packages.Count == 0
+                ? "There are no priced packages to discount."
+                : ValidateDiscount(form.DiscountType, form.DiscountValue, form.DiscountStart, form.DiscountEnd, cheapest, requireType: true);
+            if (error != null)
+            {
+                TempData["ToastError"] = error;
+                return RedirectToAction(nameof(Studio), new { photographerId = form.PhotographerId });
+            }
+
+            foreach (var p in packages) ApplyDiscount(p, form.DiscountType, form.DiscountValue, form.DiscountLabel, form.DiscountStart, form.DiscountEnd);
+            await _context.SaveChangesAsync();
+
+            var what = form.DiscountType == DiscountKind.Percent ? $"{form.DiscountValue:0.##}% off" : $"₱{form.DiscountValue:N0} off";
+            TempData["Toast"] = $"{what} applied to {packages.Count} package{(packages.Count == 1 ? "" : "s")}.";
             return RedirectToAction(nameof(Studio), new { photographerId = form.PhotographerId });
         }
 
@@ -857,6 +902,28 @@ namespace VibeShootAdmin.Controllers
         }
 
         // ------------------------------------------------------------------ Helpers
+
+        /// <summary>Returns an error message for an invalid discount, or null if it is fine (or empty).</summary>
+        private static string? ValidateDiscount(string? type, decimal value, DateTime? start, DateTime? end, decimal price, bool requireType = false)
+        {
+            if (string.IsNullOrEmpty(type)) return requireType ? "Choose a discount type." : null;
+            if (type != DiscountKind.Percent && type != DiscountKind.Amount) return "Unknown discount type.";
+            if (price <= 0) return "Custom-quote packages (price 0) can't have a discount.";
+            if (type == DiscountKind.Percent && (value < 1 || value > 90)) return "Percent discount must be between 1% and 90%.";
+            if (type == DiscountKind.Amount && (value <= 0 || value >= price)) return $"Peso discount must be more than ₱0 and less than the price (₱{price:N0}).";
+            if (start != null && end != null && end.Value.Date < start.Value.Date) return "The discount's end date is before its start date.";
+            return null;
+        }
+
+        private static void ApplyDiscount(ServicePackage pkg, string? type, decimal value, string? label, DateTime? start, DateTime? end)
+        {
+            var on = !string.IsNullOrEmpty(type) && pkg.Price > 0;
+            pkg.DiscountType = on ? type : null;
+            pkg.DiscountValue = on ? Math.Round(value, 2) : 0;
+            pkg.DiscountLabel = on && !string.IsNullOrWhiteSpace(label) ? label.Trim()[..Math.Min(label.Trim().Length, 64)] : null;
+            pkg.DiscountStart = on ? start?.Date : null;
+            pkg.DiscountEnd = on ? end?.Date : null;
+        }
 
         private IQueryable<Payment> FilterPayments(PagedFilter filter, int? pid)
         {

@@ -32,8 +32,20 @@ namespace VibeShootAdmin.Models.Entities
         [MaxLength(64)] public string Category { get; set; } = "";
         [MaxLength(128)] public string PackageName { get; set; } = "";
 
+        /// <summary>What the client pays for the package (after any discount).</summary>
         [Column(TypeName = "decimal(12,2)")]
         public decimal TotalPrice { get; set; }
+
+        /// <summary>Regular package rate at the time of booking (before discount).</summary>
+        [Column(TypeName = "decimal(12,2)")]
+        public decimal OriginalPrice { get; set; }
+
+        /// <summary>Pesos taken off by the photographer's discount (0 = none).</summary>
+        [Column(TypeName = "decimal(12,2)")]
+        public decimal DiscountAmount { get; set; }
+
+        [MaxLength(64)]
+        public string? DiscountLabel { get; set; }
 
         [Column(TypeName = "decimal(12,2)")]
         public decimal DownPaymentRequired { get; set; }
@@ -67,6 +79,11 @@ namespace VibeShootAdmin.Models.Entities
             : AmountPaid > 0 ? "Partially Paid"
             : AmountForVerification > 0 ? "For Verification"
             : "Unpaid";
+
+        /// <summary>Changes whenever the booking or any of its payments changes (drives the client's live refresh).</summary>
+        [NotMapped]
+        public string LiveStamp =>
+            $"{Status}|{UpdatedAt?.Ticks}|{string.Join(",", Payments.OrderBy(p => p.Id).Select(p => p.Id + ":" + p.Status))}";
 
         [NotMapped]
         public string TimeRange => $"{FormatTime(StartTime)} – {FormatTime(EndTime)}";

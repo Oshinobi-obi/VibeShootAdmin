@@ -102,6 +102,11 @@
                 </tbody>
             </table>
             <div class="rc-totals">
+                @if (b.DiscountAmount > 0)
+                {
+                    <div><span>Regular price</span><span>@Ui.Peso(b.OriginalPrice)</span></div>
+                    <div class="disc"><span>@(b.DiscountLabel ?? "Discount")</span><span>- @Ui.Peso(b.DiscountAmount)</span></div>
+                }
                 <div><span>Package price</span><span>@Ui.Peso(b.TotalPrice)</span></div>
                 <div><span>Total paid to date</span><span>@Ui.Peso(b.AmountPaid)</span></div>
                 <div><span>Remaining balance</span><span>@Ui.Peso(b.Balance)</span></div>
@@ -132,9 +137,14 @@
                 </tbody>
             </table>
             <div class="rc-totals">
+                @if (b.DiscountAmount > 0)
+                {
+                    <div><span>Regular price</span><span>@Ui.Peso(b.OriginalPrice)</span></div>
+                    <div class="disc"><span>@(b.DiscountLabel ?? "Discount")</span><span>- @Ui.Peso(b.DiscountAmount)</span></div>
+                }
                 <div><span>Package price</span><span>@(b.TotalPrice > 0 ? Ui.Peso(b.TotalPrice) : "Custom")</span></div>
                 <div><span>Required down payment (50%)</span><span>@Ui.Peso(b.DownPaymentRequired)</span></div>
-                <div><span>Verified payments</span><span>− @Ui.Peso(b.AmountPaid)</span></div>
+                <div><span>Paid so far (verified)</span><span>@Ui.Peso(b.AmountPaid)</span></div>
                 @if (b.AmountForVerification > 0)
                 {
                     <div><span>Being verified</span><span>@Ui.Peso(b.AmountForVerification)</span></div>

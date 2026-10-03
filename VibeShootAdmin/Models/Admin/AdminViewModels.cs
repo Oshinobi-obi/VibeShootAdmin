@@ -109,6 +109,25 @@ namespace VibeShootAdmin.Models.Admin
         public decimal Price { get; set; }
         public int DurationHours { get; set; } = 2;
         public string? Inclusions { get; set; }
+
+        // Optional discount
+        public string? DiscountType { get; set; }
+        public decimal DiscountValue { get; set; }
+        public string? DiscountLabel { get; set; }
+        public DateTime? DiscountStart { get; set; }
+        public DateTime? DiscountEnd { get; set; }
+    }
+
+    /// <summary>"Discount on all packages" form on the Settings page.</summary>
+    public class BulkDiscountForm
+    {
+        public int PhotographerId { get; set; }
+        public string? DiscountType { get; set; }
+        public decimal DiscountValue { get; set; }
+        public string? DiscountLabel { get; set; }
+        public DateTime? DiscountStart { get; set; }
+        public DateTime? DiscountEnd { get; set; }
+        public bool Remove { get; set; }
     }
 }
 

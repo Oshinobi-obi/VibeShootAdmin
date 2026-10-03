@@ -17,3 +17,4 @@
     <div class="form-row"><label for="pd-@uid">Duration (hours)</label><input autocomplete="off" class="adm-input" id="pd-@uid" name="DurationHours" type="number" min="1" max="12" value="@Model.DurationHours" required /></div>
     <div class="form-row span-2"><label for="pi-@uid">Inclusions (one per line)</label><textarea autocomplete="off" class="adm-textarea" id="pi-@uid" name="Inclusions" rows="4">@Model.Inclusions</textarea></div>
 </div>
+<partial name="_DiscountFields" model="(uid, Model.DiscountType, Model.DiscountValue, Model.DiscountLabel, Model.DiscountStart, Model.DiscountEnd)" />

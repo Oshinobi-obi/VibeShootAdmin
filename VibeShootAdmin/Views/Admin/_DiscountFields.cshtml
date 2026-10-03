@@ -1,0 +1,35 @@
+@model (string Uid, string? Type, decimal Value, string? Label, DateTime? Start, DateTime? End)
+@{
+    var none = string.IsNullOrEmpty(Model.Type);
+}
+<fieldset class="disc-box" data-discount>
+    <legend>Discount <span class="hint">(optional)</span></legend>
+    <div class="form-grid">
+        <div class="form-row">
+            <label for="dt-@Model.Uid">Type</label>
+            <select autocomplete="off" class="adm-select" id="dt-@Model.Uid" name="DiscountType" data-discount-type>
+                <option value="" selected="@none">No discount</option>
+                <option value="Percent" selected="@(Model.Type == "Percent")">Percent off (%)</option>
+                <option value="Amount" selected="@(Model.Type == "Amount")">Peso amount off (₱)</option>
+            </select>
+        </div>
+        <div class="form-row disc-only">
+            <label for="dv-@Model.Uid">How much off</label>
+            <input autocomplete="off" class="adm-input" id="dv-@Model.Uid" name="DiscountValue" type="number" min="0" step="0.01"
+                   value="@(Model.Value > 0 ? Model.Value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : "")" placeholder="e.g. 20 or 500" />
+        </div>
+        <div class="form-row span-2 disc-only">
+            <label for="dl-@Model.Uid">Label shown to clients</label>
+            <input autocomplete="off" class="adm-input" id="dl-@Model.Uid" name="DiscountLabel" maxlength="64" value="@Model.Label" placeholder="e.g. Holiday promo (leave blank to show “20% OFF”)" />
+        </div>
+        <div class="form-row disc-only">
+            <label for="ds-@Model.Uid">Starts</label>
+            <input autocomplete="off" class="adm-input" id="ds-@Model.Uid" name="DiscountStart" type="date" value="@Model.Start?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="form-row disc-only">
+            <label for="de-@Model.Uid">Ends</label>
+            <input autocomplete="off" class="adm-input" id="de-@Model.Uid" name="DiscountEnd" type="date" value="@Model.End?.ToString("yyyy-MM-dd")" />
+        </div>
+    </div>
+    <p class="hint disc-only">Leave the dates empty to keep the discount on until you remove it. The 50% down payment is computed from the discounted price.</p>
+</fieldset>

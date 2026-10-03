@@ -7,6 +7,8 @@
     ViewData["Subtitle"] = "Studio profile, GCash QR, packages and accounts";
     ViewData["SwitcherRequired"] = true;
     var p = Model.Photographer;
+    var today = DateTime.Today;
+    (string, string?, decimal, string?, DateTime?, DateTime?) emptyDiscount = ("all", null, 0m, null, null, null);
     var isSuper = ViewBag.IsSuperAdmin == true;
     var photographers = ViewBag.Photographers as List<VibeShootAdmin.Models.Admin.PhotographerOption> ?? new();
 }
@@ -124,6 +126,20 @@
 
         <div class="card">
             <div class="card-head"><div><h2>Packages</h2><p>Price 0 = custom quote (no online down payment)</p></div></div>
+            <details class="pkg-edit bulk-disc">
+                <summary class="btn btn-sm">Set a discount on all packages</summary>
+                <form autocomplete="off" method="post" asp-action="ApplyDiscountToAll" style="margin-top:12px;">
+                    <input type="hidden" name="PhotographerId" value="@p.Id" />
+                    <partial name="_DiscountFields" model="emptyDiscount" />
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button class="btn btn-gold" type="submit">Apply to all priced packages</button>
+                        @if (Model.Packages.Any(k => k.DiscountType != null))
+                        {
+                            <button class="btn btn-red" type="submit" name="Remove" value="true" formnovalidate data-confirm-btn="Remove the discount from all your packages?">Remove all discounts</button>
+                        }
+                    </div>
+                </form>
+            </details>
             @foreach (var group in Model.Packages.GroupBy(k => k.Category))
             {
                 <div class="nav-label hint" style="text-transform:uppercase;letter-spacing:.16em;font-size:.68rem;margin:6px 0 8px;">@group.Key</div>
@@ -132,8 +148,27 @@
                     <div class="pkg">
                         <div class="pkg-top">
                             <div><b>@k.Name</b> <span class="hint">· @k.DurationHours hr@(k.DurationHours == 1 ? "" : "s")</span></div>
-                            <span class="price">@(k.Price > 0 ? Ui.Peso(k.Price) : "Custom")</span>
+                            <span class="price">
+                                @if (k.HasActiveDiscount(today))
+                                {
+                                    <s>@Ui.Peso(k.Price)</s>
+                                    @Ui.Peso(k.PriceOn(today))
+                                }
+                                else
+                                {
+                                    @(k.Price > 0 ? Ui.Peso(k.Price) : "Custom")
+                                }
+                            </span>
                         </div>
+                        @if (k.DiscountType != null)
+                        {
+                            var live = k.HasActiveDiscount(today);
+                            <div class="pkg-disc @(live ? "on" : "")">
+                                <b>@k.DiscountBadge</b>
+                                @if (!string.IsNullOrEmpty(k.DiscountLabel)) { <span>· @k.DiscountLabel</span> }
+                                <span>· @(live ? "Active" : k.DiscountStart > today ? $"Starts {k.DiscountStart:MMM d}" : "Ended")@(k.DiscountEnd != null && live ? $" until {k.DiscountEnd:MMM d}" : "")</span>
+                            </div>
+                        }
                         <ul>@foreach (var line in k.InclusionList) { <li>@line</li> }</ul>
                         <details class="pkg-edit">
                             <summary>Edit package</summary>
