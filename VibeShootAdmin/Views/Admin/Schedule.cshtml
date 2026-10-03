@@ -1,5 +1,6 @@
 @{
     Layout = "_AdminLayout";
+    ViewData["Live"] = "event"; // refreshes itself when bookings/payments change
     ViewData["Title"] = "Schedule";
     ViewData["Nav"] = "Schedule";
     ViewData["Subtitle"] = "See every session at a glance and block days you're unavailable";
@@ -147,6 +148,7 @@
             document.getElementById('calNext').addEventListener('click', function () { view.setMonth(view.getMonth() + 1); load(); });
             document.getElementById('calToday').addEventListener('click', function () { view = new Date(); view.setDate(1); selected = iso(new Date()); load(); });
 
+            document.addEventListener('vs:live', load);
             load();
         })();
     </script>

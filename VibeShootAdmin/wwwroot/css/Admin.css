@@ -510,3 +510,6 @@ html, body, * {
     .adm-alerts-prompt { flex-wrap: wrap; }
     .adm-alerts-prompt-actions { width: 100%; justify-content: flex-end; }
 }
+
+/* Live-refreshed content: no entrance animations (avoids charts re-growing every refresh). */
+.adm-content.live, .adm-content.live * { animation: none !important; }

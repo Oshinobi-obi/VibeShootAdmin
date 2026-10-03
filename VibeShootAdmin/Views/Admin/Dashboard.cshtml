@@ -2,6 +2,7 @@
 @using VibeShootAdmin.Models.Entities
 @{
     Layout = "_AdminLayout";
+    ViewData["Live"] = "swap"; // refreshes itself when bookings/payments change
     ViewData["Title"] = "Overview";
     ViewData["Nav"] = "Dashboard";
     ViewData["Subtitle"] = DateTime.Today.ToString("dddd, MMMM d, yyyy");

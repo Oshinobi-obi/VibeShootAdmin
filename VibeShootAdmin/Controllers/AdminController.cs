@@ -182,8 +182,10 @@ namespace VibeShootAdmin.Controllers
         // ------------------------------------------------------------------ Live alerts
 
         /// <summary>
-        /// New booking requests and GCash payments since <paramref name="since"/> (UTC ticks), for the
-        /// signed-in admin's own photographer only. Polled by the browser to play sounds and show notifications.
+        /// Polled every few seconds by every admin page. Returns:
+        ///  - <c>stamp</c>: changes whenever a booking, payment or blocked date changes, so the page knows to refresh itself;
+        ///  - new booking requests and GCash payments since <paramref name="since"/> (UTC ticks) for sounds/notifications.
+        /// Everything is limited to the signed-in admin's own photographer (Super Admin sees all).
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> AlertsFeed(long? since)
@@ -198,9 +200,20 @@ namespace VibeShootAdmin.Controllers
                 pendingPayments = ViewBag.PendingPaymentCount,
             };
 
+            var bookingQuery = _context.Bookings.ForPhotographer(pid);
+            var paymentQuery = _context.Payments.ForPhotographer(pid);
+            var blockedQuery = _context.BlockedDates.Where(b => pid == null || b.PhotographerId == pid);
+            var stamp = string.Join("-",
+                await bookingQuery.CountAsync(),
+                (await bookingQuery.MaxAsync(b => (DateTime?)(b.UpdatedAt ?? b.CreatedAt)))?.Ticks ?? 0,
+                await paymentQuery.CountAsync(),
+                (await paymentQuery.MaxAsync(p => (DateTime?)(p.VerifiedAt ?? p.CreatedAt)))?.Ticks ?? 0,
+                await blockedQuery.CountAsync(),
+                await blockedQuery.MaxAsync(b => (int?)b.Id) ?? 0);
+
             // First call just sets the starting point, so opening the console doesn't replay old items.
             if (since == null || since <= 0)
-                return Json(new { now = now.Ticks, bookings = Array.Empty<object>(), payments = Array.Empty<object>(), counts = Counts() });
+                return Json(new { now = now.Ticks, stamp, bookings = Array.Empty<object>(), payments = Array.Empty<object>(), counts = Counts() });
 
             var from = new DateTime(Math.Max(since.Value, now.AddDays(-1).Ticks), DateTimeKind.Utc);
 
@@ -219,6 +232,7 @@ namespace VibeShootAdmin.Controllers
             return Json(new
             {
                 now = now.Ticks,
+                stamp,
                 bookings = bookings.Select(b => new { b.id, b.client, date = b.date.ToString("MMM d"), b.category }),
                 payments = payments.Select(p => new { p.id, p.booking, p.client, amount = Ui.Peso(p.amount), p.type }),
                 counts = Counts(),

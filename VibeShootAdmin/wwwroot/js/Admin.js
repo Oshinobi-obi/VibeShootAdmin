@@ -83,18 +83,26 @@
         if (msg && !window.confirm(msg)) e.preventDefault();
     });
 
-    // Reject dialog: buttons with data-reject="<paymentId>" open a <dialog id="rejectDialog">
-    var rejectDialog = document.getElementById('rejectDialog');
-    if (rejectDialog) {
-        document.addEventListener('click', function (e) {
-            var btn = e.target.closest('[data-reject]');
-            if (!btn) return;
-            rejectDialog.querySelector('input[name="id"]').value = btn.getAttribute('data-reject');
-            rejectDialog.querySelector('[data-reject-label]').textContent = btn.getAttribute('data-label') || '';
-            rejectDialog.showModal();
-        });
-        rejectDialog.querySelector('[data-cancel]').addEventListener('click', function () { rejectDialog.close(); });
-    }
+    // Confirm buttons: <button data-confirm-btn="Decline this booking?">
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-confirm-btn]');
+        if (btn && !window.confirm(btn.getAttribute('data-confirm-btn'))) e.preventDefault();
+    });
+
+    // Reject dialog: buttons with data-reject="<paymentId>" open the <dialog id="rejectDialog">.
+    // Looked up on each click because live refresh can replace the page content.
+    document.addEventListener('click', function (e) {
+        var dialog = document.getElementById('rejectDialog');
+        if (!dialog) return;
+        var btn = e.target.closest('[data-reject]');
+        if (btn) {
+            dialog.querySelector('input[name="id"]').value = btn.getAttribute('data-reject');
+            dialog.querySelector('[data-reject-label]').textContent = btn.getAttribute('data-label') || '';
+            dialog.showModal();
+        } else if (e.target.closest('[data-cancel]')) {
+            dialog.close();
+        }
+    });
 })();
 
 // =====================================================================
@@ -150,7 +158,6 @@
                 ? 'Sound alerts on. Desktop notifications are blocked in your browser settings.'
                 : 'Alerts on. You will hear new bookings and payments while this tab is open.');
             render();
-            startPolling();
         });
     }
 
@@ -170,8 +177,11 @@
     var cue = document.body.getAttribute('data-sound');
     if (cue && isOn()) sound(cue);
 
-    // ------------------------------------------------------------ Polling
-    var since = null, timer = null;
+    // ------------------------------------------------------------ Live refresh + alerts
+    // Every 5 s (15 s while the tab is in the background) ask the server whether anything changed.
+    var VISIBLE_MS = 5000, HIDDEN_MS = 15000;
+    var since = null, stamp = null, timer = null, refreshPending = false;
+    var content = document.querySelector('.adm-content');
 
     function seen() { try { return JSON.parse(get(SEEN) || '[]'); } catch (e) { return []; } }
     function markSeen(id) {
@@ -191,16 +201,51 @@
         badge.textContent = count;
     }
 
+    // Typing in a form, a dialog or photo viewer open, or text selected: wait before refreshing.
+    if (content) content.addEventListener('input', function () { content.dataset.dirty = '1'; });
+    function busy() {
+        var active = document.activeElement;
+        if (active && content && content.contains(active) && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) return true;
+        if (content && content.dataset.dirty === '1') return true;
+        if (document.querySelector('dialog[open], .adm-viewer.open')) return true;
+        var sel = window.getSelection && window.getSelection();
+        return !!(sel && sel.toString());
+    }
+
+    function refreshPage() {
+        var mode = content && content.getAttribute('data-live');
+        if (!mode) return;
+        if (mode === 'event') { document.dispatchEvent(new CustomEvent('vs:live')); return; }
+        if (busy()) { refreshPending = true; return; }
+        refreshPending = false;
+
+        fetch(window.location.href, { cache: 'no-store', credentials: 'same-origin' })
+            .then(function (r) { return r.ok ? r.text() : null; })
+            .then(function (html) {
+                if (!html || busy()) { refreshPending = true; return; }
+                var fresh = new DOMParser().parseFromString(html, 'text/html').querySelector('.adm-content');
+                if (!fresh) return;
+                content.classList.add('live');      // no entrance animations on refreshed content
+                content.innerHTML = fresh.innerHTML;
+                render();
+            })
+            .catch(function () { refreshPending = true; });
+    }
+
     function poll() {
-        if (!isOn()) return;
         fetch('/Admin/AlertsFeed' + (since ? '?since=' + since : ''), { cache: 'no-store', credentials: 'same-origin' })
-            .then(function (r) { return r.ok && r.headers.get('content-type').indexOf('json') >= 0 ? r.json() : null; })
+            .then(function (r) { return r.ok && (r.headers.get('content-type') || '').indexOf('json') >= 0 ? r.json() : null; })
             .then(function (data) {
                 if (!data) return;
                 since = data.now;
                 setBadge('/Admin/Bookings', data.counts.pendingBookings, false);
                 setBadge('/Admin/Transactions', data.counts.pendingPayments, true);
 
+                if (stamp !== null && data.stamp !== stamp) refreshPage();
+                else if (refreshPending && !document.hidden) refreshPage();
+                stamp = data.stamp;
+
+                if (!isOn()) return;
                 var newBookings = data.bookings.filter(function (b) { return markSeen('b:' + b.id); });
                 var newPayments = data.payments.filter(function (p) { return markSeen('p:' + p.id); });
 
@@ -220,15 +265,20 @@
                     bell.classList.remove('ring'); void bell.offsetWidth; bell.classList.add('ring');
                 }
             })
-            .catch(function () { });
+            .catch(function () { })
+            .then(schedule);
     }
 
-    function startPolling() {
-        if (timer) return;
-        poll();
-        timer = setInterval(poll, POLL_MS);
+    function schedule() {
+        clearTimeout(timer);
+        timer = setTimeout(poll, document.hidden ? HIDDEN_MS : VISIBLE_MS);
     }
+
+    // Coming back to the tab: check straight away.
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) { clearTimeout(timer); poll(); }
+    });
 
     render();
-    if (isOn()) startPolling();
+    poll();
 })();

@@ -1,6 +1,7 @@
 @model VibeShootAdmin.Models.Admin.TransactionsViewModel
 @{
     Layout = "_AdminLayout";
+    ViewData["Live"] = "swap"; // refreshes itself when bookings/payments change
     ViewData["Title"] = "Receipts";
     ViewData["Nav"] = "Receipts";
     ViewData["Subtitle"] = "Official receipts for verified payments — reprint any time";

@@ -2,6 +2,7 @@
 @using VibeShootAdmin.Models.Entities
 @{
     Layout = "_AdminLayout";
+    ViewData["Live"] = "swap"; // refreshes itself when bookings/payments change
     ViewData["Title"] = "Transactions";
     ViewData["Nav"] = "Transactions";
     ViewData["Subtitle"] = "Monitor GCash payments, verify proofs and track collections";

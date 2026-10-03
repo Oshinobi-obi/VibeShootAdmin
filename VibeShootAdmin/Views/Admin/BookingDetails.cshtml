@@ -2,6 +2,7 @@
 @using VibeShootAdmin.Models.Entities
 @{
     Layout = "_AdminLayout";
+    ViewData["Live"] = "swap"; // refreshes itself when bookings/payments change
     ViewData["Title"] = Model.ClientName;
     ViewData["Nav"] = "Bookings";
     ViewData["Subtitle"] = $"{Model.TransactionId} · requested {Ui.Stamp(Model.CreatedAt)}";
@@ -183,12 +184,3 @@
 
 <partial name="_RejectDialog" model="here" />
 
-@section Scripts {
-    <script>
-        document.querySelectorAll('[data-confirm-btn]').forEach(function (btn) {
-            btn.addEventListener('click', function (e) {
-                if (!confirm(btn.getAttribute('data-confirm-btn'))) e.preventDefault();
-            });
-        });
-    </script>
-}
