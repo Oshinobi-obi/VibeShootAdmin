@@ -125,8 +125,14 @@
 
     function notify(title, body, url) {
         if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        var opts = { body: body, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png', tag: url, data: { url: url } };
+        // Installed apps (especially on Android) can only show notifications through the service worker.
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.ready.then(function (reg) { reg.showNotification(title, opts); });
+            return;
+        }
         try {
-            var n = new Notification(title, { body: body, icon: '/favicon.svg', tag: url });
+            var n = new Notification(title, opts);
             n.onclick = function () { window.focus(); window.location.href = url; n.close(); };
         } catch (e) { }
     }

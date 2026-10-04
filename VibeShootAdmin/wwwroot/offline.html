@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" style="background:#0b0b0d">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b0b0d" />
+    <title>Offline · VibeShoot Admin</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+        * { box-sizing: border-box; }
+        html, body { margin: 0; min-height: 100%; background: #0b0b0d; color: #f5f5f2; font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+        body { min-height: 100vh; display: grid; place-items: center; padding: 24px; text-align: center;
+               background-image: radial-gradient(900px 500px at 50% -10%, rgba(201,162,39,0.12), transparent 60%); }
+        .card { max-width: 380px; }
+        .mark { width: 72px; height: 72px; margin: 0 auto 22px; display: block; }
+        h1 { font-family: Anton, Impact, 'Arial Narrow Bold', sans-serif; font-weight: 400; letter-spacing: 0.06em; font-size: 2rem; margin: 0 0 8px; }
+        p { color: rgba(245,245,242,0.7); line-height: 1.6; margin: 0 0 24px; }
+        button { border: 0; border-radius: 12px; padding: 13px 26px; font: inherit; font-weight: 600; letter-spacing: 0.04em; cursor: pointer;
+                 background: linear-gradient(135deg, #e3bf4a, #c9a227); color: #15120a; }
+        button:focus-visible { outline: 2px solid #e3bf4a; outline-offset: 3px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <img class="mark" src="/favicon.svg" alt="" />
+        <h1>YOU'RE OFFLINE</h1>
+        <p>VibeShoot Admin needs an internet connection to show your bookings and payments. Check your Wi-Fi or mobile data, then try again.</p>
+        <button type="button" onclick="location.reload()">Try again</button>
+    </div>
+    <script>window.addEventListener('online', function () { location.reload(); });</script>
+</body>
+</html>

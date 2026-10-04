@@ -10,6 +10,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sign in · VibeShoot Admin</title>
     <link rel="icon" type="image/svg+xml" href="~/favicon.svg" asp-append-version="true" />
+    <link rel="manifest" href="~/manifest.webmanifest" />
+    <meta name="theme-color" content="#0b0b0d" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="VibeShoot" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="apple-touch-icon" href="~/icons/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -56,10 +63,17 @@
                     <button type="submit" class="btn btn-gold">Sign in</button>
                 </form>
 
+                <button type="button" class="adm-install login-install" data-install-app hidden>
+                    <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                    Install VibeShoot Admin as an app
+                </button>
                 <p class="hint" style="margin-top:22px;"><a href="@Site.PublicUrl("/photographers")">&larr; Back to the VibeShoot site</a></p>
             </div>
         </div>
     </div>
+    <link rel="stylesheet" href="~/css/Modal.css" asp-append-version="true" />
+    <script src="~/js/modal.js" asp-append-version="true"></script>
+    <script src="~/js/pwa.js" asp-append-version="true"></script>
     <script>
         document.getElementById('pwToggle').addEventListener('click', function () {
             var pw = document.getElementById('Password');

@@ -20,6 +20,17 @@ payment screenshots, are stored in that database (`MediaFiles` table), so the tw
 4. Open http://localhost:5018 and sign in with **admin / Admin123!** (created on first start; change it under
    *Settings → Change your password*).
 
+## Install as an app (PWA)
+VibeShoot Admin can be installed like a program: its own window, desktop/taskbar icon and home-screen icon.
+- **Windows / Mac (Chrome or Edge):** open the console and click **Install app** in the sidebar (or the install
+  icon in the address bar).
+- **Android (Chrome):** menu ⋮ → **Install app**.
+- **iPhone / iPad (Safari):** Share → **Add to Home Screen**.
+
+Browsers only offer installing on **HTTPS** sites (localhost works for testing), so turn on SSL for the hosted site
+first. The app caches only its own styles, scripts, icons and sounds; pages with client data are always loaded live,
+and an offline screen appears when there's no connection.
+
 ## Pages
 - **Overview**: money collected this month, payments awaiting verification, pending requests, 6-month chart
 - **Schedule**: month calendar of all sessions; block/unblock days off

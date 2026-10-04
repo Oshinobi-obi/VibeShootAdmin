@@ -15,6 +15,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] · VibeShoot Admin</title>
     <link rel="icon" type="image/svg+xml" href="~/favicon.svg" asp-append-version="true" />
+    <link rel="manifest" href="~/manifest.webmanifest" />
+    <meta name="theme-color" content="#0b0b0d" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="VibeShoot" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="apple-touch-icon" href="~/icons/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -69,6 +76,9 @@
         </nav>
 
         <div class="adm-side-foot">
+            <button type="button" class="adm-install" data-install-app hidden>
+                <svg><use href="#i-dl" /></svg>Install app
+            </button>
             <a href="@Site.PublicUrl("/photographers")" target="_blank" rel="noopener"><svg><use href="#i-ext" /></svg>View public site</a>
             <div class="adm-user">
                 <span class="adm-avatar">@((ViewBag.AdminName as string ?? "A")[..1].ToUpperInvariant())</span>
@@ -158,6 +168,7 @@
 
     @Html.AntiForgeryToken()
     <script src="~/js/modal.js" asp-append-version="true"></script>
+    <script src="~/js/pwa.js" asp-append-version="true"></script>
     <script src="~/js/shrinkImage.js" asp-append-version="true"></script>
     <script src="~/js/Admin.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)

@@ -550,3 +550,17 @@ html, body, * {
 .rv-item p { margin: 8px 0 0; color: var(--text-2); font-style: italic; word-break: break-word; }
 .rv-item-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .rv-item-tags span { font-size: 0.74rem; border: 1px solid var(--line-strong); border-radius: 999px; padding: 2px 9px; color: var(--text-2); }
+
+/* ---------- Install as app (PWA) ---------- */
+.adm-install {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    background: var(--gold-soft); border: 1px solid rgba(201,162,39,0.4); color: var(--gold-2);
+    border-radius: 10px; padding: 9px 12px; font: inherit; font-size: 0.82rem; font-weight: 500; cursor: pointer;
+    transition: background .2s;
+}
+.adm-install:hover { background: rgba(201,162,39,0.24); }
+.adm-install svg { width: 16px; height: 16px; }
+.adm-install[hidden] { display: none; }
+.login-install { justify-content: center; margin-top: 14px; }
+/* Installed app: no need to link out to the browser-only extras */
+.is-installed .adm-install { display: none !important; }

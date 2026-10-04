@@ -1,0 +1,38 @@
+{
+  "id": "/",
+  "name": "VibeShoot Admin",
+  "short_name": "VibeShoot",
+  "description": "Manage VibeShoot bookings, verify GCash payments, print receipts and update your studio.",
+  "start_url": "/Admin/Dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b0b0d",
+  "theme_color": "#0b0b0d",
+  "categories": [ "business", "productivity" ],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Transactions",
+      "short_name": "Payments",
+      "description": "Verify GCash payments",
+      "url": "/Admin/Transactions",
+      "icons": [ { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" } ]
+    },
+    {
+      "name": "Bookings",
+      "url": "/Admin/Bookings",
+      "icons": [ { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" } ]
+    },
+    {
+      "name": "Schedule",
+      "url": "/Admin/Schedule",
+      "icons": [ { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" } ]
+    }
+  ]
+}
