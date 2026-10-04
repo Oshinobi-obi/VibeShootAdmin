@@ -69,17 +69,17 @@
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     @if (Model.Status == BookingStatus.Pending)
                     {
-                        <button class="btn btn-gold" name="status" value="@BookingStatus.Confirmed"><svg><use href="#i-check" /></svg>Confirm booking</button>
-                        <button class="btn btn-red" name="status" value="@BookingStatus.Declined" data-confirm-btn="Decline this booking?">Decline</button>
+                        <button class="btn btn-gold" name="status" value="@BookingStatus.Confirmed" data-confirm-title="Confirm this booking?" data-confirm="@Model.ClientName's session on @Model.TargetDate.ToString("MMMM d") (@Model.TimeRange) will be locked in. Make sure the down payment is verified." data-confirm-ok="Confirm booking"><svg><use href="#i-check" /></svg>Confirm booking</button>
+                        <button class="btn btn-red" name="status" value="@BookingStatus.Declined" data-confirm-title="Decline this booking?" data-confirm="The date will open up for other clients and @Model.ClientName will see the booking as declined. Add a reason in Remarks so they know why." data-confirm-ok="Decline" data-confirm-variant="danger">Decline</button>
                     }
                     @if (Model.Status == BookingStatus.Confirmed)
                     {
-                        <button class="btn btn-green" name="status" value="@BookingStatus.Completed"><svg><use href="#i-check" /></svg>Mark as completed</button>
-                        <button class="btn btn-red" name="status" value="@BookingStatus.Cancelled" data-confirm-btn="Cancel this booking?">Cancel booking</button>
+                        <button class="btn btn-green" name="status" value="@BookingStatus.Completed" data-confirm-title="Mark as completed?" data-confirm="This means the session is done. @Model.ClientName will be able to leave a review." data-confirm-ok="Mark completed"><svg><use href="#i-check" /></svg>Mark as completed</button>
+                        <button class="btn btn-red" name="status" value="@BookingStatus.Cancelled" data-confirm-title="Cancel this booking?" data-confirm="The date will open up again. Remember the policy: the down payment is refunded only if the photographer cancels." data-confirm-ok="Cancel booking" data-confirm-variant="danger">Cancel booking</button>
                     }
                     @if (!isOpen)
                     {
-                        <button class="btn" name="status" value="@BookingStatus.Pending">Reopen as pending</button>
+                        <button class="btn" name="status" value="@BookingStatus.Pending" data-confirm-title="Reopen this booking?" data-confirm="It goes back to Pending and takes up the date again." data-confirm-ok="Reopen">Reopen as pending</button>
                     }
                 </div>
             </form>
@@ -144,7 +144,9 @@
                     <div class="row-actions">
                         @if (p.Status == PaymentStatus.ForVerification)
                         {
-                            <form autocomplete="off" class="inline-form" method="post" asp-action="VerifyPayment">
+                            <form autocomplete="off" class="inline-form" method="post" asp-action="VerifyPayment"
+                                  data-confirm-title="Verify this payment?" data-confirm-ok="Yes, verify"
+                                  data-confirm="Only verify if you can see @Ui.Peso(p.Amount) with reference @(p.ReferenceNumber ?? "(none)") in your GCash history. This can't be undone.">
                                 <input type="hidden" name="id" value="@p.Id" /><input type="hidden" name="returnUrl" value="@here" />
                                 <button class="btn btn-sm btn-green"><svg><use href="#i-check" /></svg>Verify</button>
                             </form>
@@ -163,7 +165,9 @@
         {
             <div class="card">
                 <div class="card-head"><div><h2>Record a payment</h2><p>For cash or GCash received outside the website. It is saved as verified.</p></div></div>
-                <form autocomplete="off" method="post" asp-action="RecordPayment" class="form-grid">
+                <form autocomplete="off" method="post" asp-action="RecordPayment" class="form-grid"
+                      data-confirm-title="Record this payment?" data-confirm-ok="Record payment"
+                      data-confirm="It will be saved as verified and an official receipt will be issued to @Model.ClientName.">
                     <input type="hidden" name="transactionId" value="@Model.TransactionId" />
                     <div class="form-row">
                         <label for="amount">Amount (₱)</label>

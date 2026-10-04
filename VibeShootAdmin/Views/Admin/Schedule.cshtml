@@ -132,6 +132,12 @@
 
             document.getElementById('blockBtn').addEventListener('click', async function () {
                 if (!selected || !photographerId) return;
+                var isBlocked = data.blocked.some(function (b) { return b.date === selected; });
+                var nice = new Date(selected + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+                var ok = await vsModal.confirm(isBlocked
+                    ? { title: 'Open this date again?', message: 'Clients will be able to book ' + nice + '.', ok: 'Open date' }
+                    : { title: 'Block this date?', message: 'Clients won\'t be able to book ' + nice + '. Existing sessions on this day stay as they are.', ok: 'Block date', variant: 'danger' });
+                if (!ok) return;
                 var res = await fetch('/Admin/ToggleBlockDate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': vsToken() },

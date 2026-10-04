@@ -19,6 +19,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/css/Admin.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/Modal.css" asp-append-version="true" />
     @await RenderSectionAsync("Head", required: false)
 </head>
 <body class="adm" data-sound="@TempData["Sound"]">
@@ -62,6 +63,7 @@
             <a class="@(active == "Receipts" ? "active" : "")" href="@Url.Action("Receipts", "Admin")"><svg><use href="#i-receipt" /></svg>Receipts</a>
 
             <span class="adm-nav-label">Studio</span>
+            <a class="@(active == "Reviews" ? "active" : "")" href="@Url.Action("Reviews", "Admin")"><svg><use href="#i-star" /></svg>Reviews</a>
             <a class="@(active == "Gallery" ? "active" : "")" href="@Url.Action("Gallery", "Admin")"><svg><use href="#i-image" /></svg>Gallery</a>
             <a class="@(active == "Studio" ? "active" : "")" href="@Url.Action("Studio", "Admin")"><svg><use href="#i-cog" /></svg>Settings</a>
         </nav>
@@ -71,7 +73,11 @@
             <div class="adm-user">
                 <span class="adm-avatar">@((ViewBag.AdminName as string ?? "A")[..1].ToUpperInvariant())</span>
                 <span><b>@ViewBag.AdminName</b><small>@(isSuper ? "Super Admin" : "Photographer")</small></span>
-                <a href="@Url.Action("Logout", "Admin")" title="Sign out" aria-label="Sign out"><svg><use href="#i-out" /></svg></a>
+                <form method="post" action="@Url.Action("Logout", "Admin")" class="inline-form"
+                      data-confirm="You'll need your username and password to get back in." data-confirm-title="Sign out?" data-confirm-ok="Sign out">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="adm-signout" title="Sign out" aria-label="Sign out"><svg><use href="#i-out" /></svg></button>
+                </form>
             </div>
         </div>
     </aside>
@@ -130,9 +136,14 @@
         {
             <div class="adm-toast ok"><svg><use href="#i-check" /></svg><span>@TempData["Toast"]</span></div>
         }
+        @* Errors and important results open as a pop-up instead of a small toast. *@
         @if (TempData["ToastError"] != null)
         {
-            <div class="adm-toast err"><svg><use href="#i-x" /></svg><span>@TempData["ToastError"]</span></div>
+            <template data-notice data-title="Couldn't do that" data-variant="error">@TempData["ToastError"]</template>
+        }
+        @if (TempData["NoticeMessage"] != null)
+        {
+            <template data-notice data-title="@TempData["NoticeTitle"]" data-variant="@TempData["NoticeVariant"]">@TempData["NoticeMessage"]</template>
         }
     </div>
 
@@ -146,6 +157,7 @@
     </div>
 
     @Html.AntiForgeryToken()
+    <script src="~/js/modal.js" asp-append-version="true"></script>
     <script src="~/js/shrinkImage.js" asp-append-version="true"></script>
     <script src="~/js/Admin.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)

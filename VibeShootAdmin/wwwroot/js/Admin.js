@@ -76,18 +76,7 @@
         viewerImg.src = '';
     }
 
-    // Confirm dialogs: <form data-confirm="Are you sure?">
-    document.addEventListener('submit', function (e) {
-        var form = e.target;
-        var msg = form.getAttribute('data-confirm');
-        if (msg && !window.confirm(msg)) e.preventDefault();
-    });
-
-    // Confirm buttons: <button data-confirm-btn="Decline this booking?">
-    document.addEventListener('click', function (e) {
-        var btn = e.target.closest('[data-confirm-btn]');
-        if (btn && !window.confirm(btn.getAttribute('data-confirm-btn'))) e.preventDefault();
-    });
+    // Confirmations (data-confirm / data-confirm-btn) are handled by modal.js.
 
     // Reject dialog: buttons with data-reject="<paymentId>" open the <dialog id="rejectDialog">.
     // Looked up on each click because live refresh can replace the page content.

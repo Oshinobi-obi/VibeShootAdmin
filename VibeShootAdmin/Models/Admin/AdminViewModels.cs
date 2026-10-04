@@ -118,6 +118,17 @@ namespace VibeShootAdmin.Models.Admin
         public DateTime? DiscountEnd { get; set; }
     }
 
+    public class ReviewsAdminViewModel
+    {
+        public int Total { get; set; }
+        public double Average { get; set; }
+        public Dictionary<int, int> Breakdown { get; set; } = new Dictionary<int, int>();
+        public List<KeyValuePair<string, int>> TopTags { get; set; } = new List<KeyValuePair<string, int>>();
+        public List<Review> Items { get; set; } = new List<Review>();
+        public int Page { get; set; } = 1;
+        public int TotalPages { get; set; } = 1;
+    }
+
     /// <summary>"Discount on all packages" form on the Settings page.</summary>
     public class BulkDiscountForm
     {

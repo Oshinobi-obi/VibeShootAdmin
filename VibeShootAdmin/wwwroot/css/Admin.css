@@ -524,3 +524,29 @@ html, body, * {
 .pkg-disc b { color: var(--text-2); }
 .pkg-disc.on b { color: #ff9a9a; }
 .bulk-disc { margin-bottom: 14px; }
+
+.adm-signout { background: none; border: 0; color: var(--text-3); padding: 6px; border-radius: 8px; display: grid; cursor: pointer; }
+.adm-signout:hover { color: var(--red); background: rgba(240,99,99,0.1); }
+.adm-signout svg { width: 18px; height: 18px; }
+
+/* ---------- Reviews ---------- */
+.rv-stars { position: relative; display: inline-block; font-size: 1.2rem; letter-spacing: 2px; line-height: 1; color: rgba(245,245,242,0.18); }
+.rv-stars::before { content: "°5°5°5°5°5"; }
+.rv-stars i { position: absolute; inset: 0 auto 0 0; width: var(--pct, 0%); overflow: hidden; white-space: nowrap; color: var(--gold-2); font-style: normal; }
+.rv-stars.sm { font-size: 0.95rem; }
+.rv-big { display: flex; align-items: center; gap: 14px; margin: 8px 0 16px; }
+.rv-big > b { font-size: 3rem; font-weight: 600; line-height: 1; }
+.rv-big small { display: block; color: var(--text-3); font-size: 0.8rem; margin-top: 4px; }
+.rv-bars { display: flex; flex-direction: column; gap: 8px; }
+.rv-bars .breakdown-row { grid-template-columns: 40px 1fr 30px; }
+.rv-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.rv-tags span { border: 1px solid rgba(201,162,39,0.35); background: var(--gold-soft); border-radius: 999px; padding: 6px 12px; font-size: 0.82rem; }
+.rv-tags b { color: var(--gold-2); margin-left: 4px; }
+.rv-list { display: flex; flex-direction: column; }
+.rv-item { padding: 16px 0; border-bottom: 1px solid var(--line); }
+.rv-item:last-child { border-bottom: none; }
+.rv-item.hidden { opacity: 0.55; }
+.rv-item header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.86rem; }
+.rv-item p { margin: 8px 0 0; color: var(--text-2); font-style: italic; word-break: break-word; }
+.rv-item-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.rv-item-tags span { font-size: 0.74rem; border: 1px solid var(--line-strong); border-radius: 999px; padding: 2px 9px; color: var(--text-2); }

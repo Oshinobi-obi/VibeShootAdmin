@@ -44,7 +44,7 @@
 
         <div class="card">
             <div class="card-head"><div><h2>Change your password</h2><p>Signed in as @ViewBag.AdminName</p></div></div>
-            <form autocomplete="off" method="post" asp-action="ChangePassword">
+            <form autocomplete="off" method="post" asp-action="ChangePassword" data-confirm-title="Change your password?" data-confirm="You'll use the new password the next time you sign in." data-confirm-ok="Change password">
                 <div class="form-row"><label for="cp">Current password</label><input class="adm-input" id="cp" type="password" name="currentPassword" required autocomplete="off" /></div>
                 <div class="form-grid">
                     <div class="form-row"><label for="np">New password</label><input class="adm-input" id="np" type="password" name="newPassword" minlength="8" required autocomplete="off" /></div>
@@ -69,7 +69,7 @@
                 </div>
                 <details>
                     <summary class="btn btn-sm"><svg><use href="#i-plus" /></svg>New account</summary>
-                    <form autocomplete="off" method="post" asp-action="CreateAccount" style="margin-top:14px;">
+                    <form autocomplete="off" method="post" asp-action="CreateAccount" style="margin-top:14px;" data-confirm-title="Create this account?" data-confirm="They'll be able to sign in with the access you picked. Photographer accounts only see their own studio." data-confirm-ok="Create account">
                         <div class="form-grid">
                             <div class="form-row"><label for="nu">Username</label><input autocomplete="off" class="adm-input" id="nu" name="username" minlength="3" required /></div>
                             <div class="form-row"><label for="npw">Password</label><input class="adm-input" id="npw" type="password" name="password" minlength="8" required autocomplete="off" /></div>
@@ -128,14 +128,14 @@
             <div class="card-head"><div><h2>Packages</h2><p>Price 0 = custom quote (no online down payment)</p></div></div>
             <details class="pkg-edit bulk-disc">
                 <summary class="btn btn-sm">Set a discount on all packages</summary>
-                <form autocomplete="off" method="post" asp-action="ApplyDiscountToAll" style="margin-top:12px;">
+                <form autocomplete="off" method="post" asp-action="ApplyDiscountToAll" style="margin-top:12px;" data-confirm-title="Apply this discount?" data-confirm="All your priced packages will show the discounted price to clients right away." data-confirm-ok="Apply discount">
                     <input type="hidden" name="PhotographerId" value="@p.Id" />
                     <partial name="_DiscountFields" model="emptyDiscount" />
                     <div style="display:flex;gap:8px;flex-wrap:wrap;">
                         <button class="btn btn-gold" type="submit">Apply to all priced packages</button>
                         @if (Model.Packages.Any(k => k.DiscountType != null))
                         {
-                            <button class="btn btn-red" type="submit" name="Remove" value="true" formnovalidate data-confirm-btn="Remove the discount from all your packages?">Remove all discounts</button>
+                            <button class="btn btn-red" type="submit" name="Remove" value="true" formnovalidate data-confirm-title="Remove all discounts?" data-confirm="Clients will see your regular rates again." data-confirm-ok="Remove discounts" data-confirm-variant="danger">Remove all discounts</button>
                         }
                     </div>
                 </form>
@@ -178,7 +178,7 @@
                                 <partial name="_PackageFields" model="k" />
                                 <div style="display:flex;gap:8px;">
                                     <button class="btn btn-sm btn-gold" type="submit">Save</button>
-                                    <button class="btn btn-sm btn-red" type="submit" formaction="@Url.Action("DeletePackage", "Admin", new { id = k.Id })" formnovalidate onclick="return confirm('Remove this package? Existing bookings keep their details.')">Remove</button>
+                                    <button class="btn btn-sm btn-red" type="submit" formaction="@Url.Action("DeletePackage", "Admin", new { id = k.Id })" formnovalidate data-confirm-title="Remove this package?" data-confirm="Clients won't be able to book it anymore. Existing bookings keep their details." data-confirm-ok="Remove" data-confirm-variant="danger">Remove</button>
                                 </div>
                             </form>
                         </details>

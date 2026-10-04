@@ -1,0 +1,86 @@
+@model VibeShootAdmin.Models.Admin.ReviewsAdminViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Reviews";
+    ViewData["Nav"] = "Reviews";
+    ViewData["Subtitle"] = "What clients said after their sessions (only clients with a completed booking can review)";
+    var isSuper = ViewBag.IsSuperAdmin == true;
+    var visibleCount = Model.Breakdown.Values.Sum();
+    var pct = (Model.Average / 5 * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+}
+
+<section class="grid grid-1-2" style="margin-bottom:18px;">
+    <div class="card">
+        <div class="kpi-label">Average rating</div>
+        <div class="rv-big">
+            <b>@(visibleCount > 0 ? Model.Average.ToString("0.0") : "–")</b>
+            <div>
+                <span class="rv-stars" style="--pct:@pct%"><i>★★★★★</i></span>
+                <small>@visibleCount public review@(visibleCount == 1 ? "" : "s")@(Model.Total > visibleCount ? $" · {Model.Total - visibleCount} hidden" : "")</small>
+            </div>
+        </div>
+        <div class="rv-bars">
+            @for (int n = 5; n >= 1; n--)
+            {
+                var c = Model.Breakdown.TryGetValue(n, out var v) ? v : 0;
+                <div class="breakdown-row">
+                    <span>@n ★</span>
+                    <span class="track"><span class="fill" style="display:block;width:@(visibleCount == 0 ? 0 : c * 100 / visibleCount)%;background:var(--gold)"></span></span>
+                    <span class="count">@c</span>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-head"><div><h2>What clients liked</h2><p>Most-picked compliments</p></div></div>
+        @if (!Model.TopTags.Any())
+        {
+            <div class="empty" style="padding:20px;"><b>No compliments yet</b>They'll appear here as clients leave reviews.</div>
+        }
+        <div class="rv-tags">
+            @foreach (var t in Model.TopTags)
+            {
+                <span>@t.Key <b>@t.Value</b></span>
+            }
+        </div>
+    </div>
+</section>
+
+<div class="card">
+    @if (!Model.Items.Any())
+    {
+        <div class="empty"><svg><use href="#i-star" /></svg><b>No reviews yet</b>After you mark a session as completed, the client can review it from their receipt.</div>
+    }
+    <div class="rv-list">
+        @foreach (var r in Model.Items)
+        {
+            <article class="rv-item @(r.IsHidden ? "hidden" : "")">
+                <header>
+                    <span class="rv-stars sm" style="--pct:@(r.Rating * 20)%" aria-label="@r.Rating out of 5 stars"><i>★★★★★</i></span>
+                    <b>@r.DisplayName</b>
+                    <span class="muted">· @r.Category@(isSuper && ViewBag.SelectedPhotographerId == null ? $" · {r.Photographer?.Name}" : "") · @Ui.Stamp(r.CreatedAt)</span>
+                    @if (r.IsHidden) { <span class="pill pill-cancelled">Hidden</span> }
+                    <a class="btn btn-sm btn-ghost" style="margin-left:auto;" href="@Url.Action("BookingDetails", "Admin", new { id = r.BookingTransactionId })">Booking</a>
+                    @if (isSuper)
+                    {
+                        <form class="inline-form" method="post" asp-action="ToggleReviewHidden" asp-route-id="@r.Id" asp-route-photographerId="@ViewBag.SelectedPhotographerId"
+                              data-confirm-title="@(r.IsHidden ? "Show this review again?" : "Hide this review?")"
+                              data-confirm="@(r.IsHidden ? "It will appear on the public site and count toward the rating again." : "It will be removed from the public site and won't count toward the rating. Use this for abusive or fake content, not for low ratings.")"
+                              data-confirm-ok="@(r.IsHidden ? "Show review" : "Hide review")" data-confirm-variant="@(r.IsHidden ? "gold" : "danger")">
+                            <button class="btn btn-sm @(r.IsHidden ? "" : "btn-red")" type="submit">@(r.IsHidden ? "Show" : "Hide")</button>
+                        </form>
+                    }
+                </header>
+                @if (!string.IsNullOrWhiteSpace(r.Comment))
+                {
+                    <p>“@r.Comment”</p>
+                }
+                @if (r.TagList.Any())
+                {
+                    <div class="rv-item-tags">@foreach (var t in r.TagList) { <span>@t</span> }</div>
+                }
+            </article>
+        }
+    </div>
+    <partial name="_Pager" model="(Model.Page, Model.TotalPages, Model.Total)" />
+</div>

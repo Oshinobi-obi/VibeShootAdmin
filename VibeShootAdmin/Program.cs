@@ -14,6 +14,7 @@ builder.Services.AddSingleton(site);
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<MediaStore>();
+builder.Services.AddVibeShootRateLimits();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -23,6 +24,9 @@ builder.Services.AddAuthentication("VibeShootAdminCookie")
     .AddCookie("VibeShootAdminCookie", options =>
     {
         options.Cookie.Name = "VibeShootAdmin.Auth";
+        options.Cookie.HttpOnly = true;                       // page scripts can't read it
+        options.Cookie.SameSite = SameSiteMode.Lax;           // not sent with form posts from other sites
+        options.SlidingExpiration = true;
         options.LoginPath = "/Admin/Login";
         options.AccessDeniedPath = "/Admin/Login";
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
@@ -61,6 +65,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 if (httpsEnabled) app.UseHttpsRedirection();
+app.UseSecurityHeaders();
 
 // Old-style /Uploads/... image paths (from before images moved into the database) live on the public site.
 app.Use(async (context, next) =>
@@ -74,6 +79,7 @@ app.Use(async (context, next) =>
 });
 
 app.UseRouting();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapStaticAssets();

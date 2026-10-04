@@ -76,6 +76,7 @@ namespace VibeShootAdmin.Controllers
         [AllowAnonymous]
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("login")]
         public async Task<IActionResult> Login(AdminLoginViewModel model)
         {
             var admin = await _context.Admins.FirstOrDefaultAsync(a => a.Username == model.Username);
@@ -101,6 +102,8 @@ namespace VibeShootAdmin.Controllers
             return View("~/Views/Admin/Login.cshtml", model);
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync("VibeShootAdminCookie");
@@ -376,7 +379,15 @@ namespace VibeShootAdmin.Controllers
             booking.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
-            TempData["Toast"] = $"Booking {booking.TransactionId} marked as {status}.";
+            Notify(status switch
+            {
+                BookingStatus.Confirmed => "Booking confirmed",
+                BookingStatus.Completed => "Session completed",
+                BookingStatus.Declined => "Booking declined",
+                BookingStatus.Cancelled => "Booking cancelled",
+                _ => "Booking reopened",
+            }, $"{booking.ClientName}'s booking ({booking.TransactionId}) is now {status.ToLowerInvariant()}.",
+               status is BookingStatus.Declined or BookingStatus.Cancelled ? "info" : "success");
             if (status is BookingStatus.Declined or BookingStatus.Cancelled) TempData["Sound"] = "booking-cancelled";
             return LocalRedirect(returnUrl ?? Url.Action(nameof(BookingDetails), new { id = transactionId })!);
         }
@@ -438,7 +449,9 @@ namespace VibeShootAdmin.Controllers
             payment.Booking.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
-            TempData["Toast"] = $"Payment {payment.ReceiptNumber} verified (₱{payment.Amount:N2}).";
+            Notify("Payment verified", $"₱{payment.Amount:N2} from {payment.Booking.ClientName} is verified" +
+                (payment.Booking.Status == BookingStatus.Confirmed ? " and the booking is confirmed." : ".") +
+                $" Official receipt {payment.ReceiptNumber} is ready to print.");
             TempData["Sound"] = "payment-verified";
             return LocalRedirect(returnUrl ?? Url.Action(nameof(Transactions))!);
         }
@@ -456,7 +469,7 @@ namespace VibeShootAdmin.Controllers
             payment.VerifiedBy = User.Identity?.Name;
             await _context.SaveChangesAsync();
 
-            TempData["Toast"] = $"Payment {payment.ReceiptNumber} rejected.";
+            Notify("Payment rejected", $"{payment.ReceiptNumber} was rejected. The client will see your reason on their receipt.", "info");
             return LocalRedirect(returnUrl ?? Url.Action(nameof(Transactions))!);
         }
 
@@ -490,7 +503,7 @@ namespace VibeShootAdmin.Controllers
             booking.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
-            TempData["Toast"] = $"₱{amount:N2} {method} payment recorded.";
+            Notify("Payment recorded", $"₱{amount:N2} {method} payment recorded for {booking.ClientName}. Remaining balance: ₱{booking.Balance:N2}.");
             return RedirectToAction(nameof(BookingDetails), new { id = transactionId });
         }
 
@@ -816,7 +829,7 @@ namespace VibeShootAdmin.Controllers
             {
                 foreach (var p in packages) ApplyDiscount(p, null, 0, null, null, null);
                 await _context.SaveChangesAsync();
-                TempData["Toast"] = "Discounts removed. Clients now see your regular rates.";
+                Notify("Discounts removed", "Clients now see your regular rates.", "info");
                 return RedirectToAction(nameof(Studio), new { photographerId = form.PhotographerId });
             }
 
@@ -834,7 +847,7 @@ namespace VibeShootAdmin.Controllers
             await _context.SaveChangesAsync();
 
             var what = form.DiscountType == DiscountKind.Percent ? $"{form.DiscountValue:0.##}% off" : $"₱{form.DiscountValue:N0} off";
-            TempData["Toast"] = $"{what} applied to {packages.Count} package{(packages.Count == 1 ? "" : "s")}.";
+            Notify("Discount applied", $"{what} is now on {packages.Count} package{(packages.Count == 1 ? "" : "s")}. Clients see the new prices right away.");
             return RedirectToAction(nameof(Studio), new { photographerId = form.PhotographerId });
         }
 
@@ -869,7 +882,7 @@ namespace VibeShootAdmin.Controllers
             {
                 admin.PasswordHash = hasher.HashPassword(admin, newPassword);
                 await _context.SaveChangesAsync();
-                TempData["Toast"] = "Password updated.";
+                Notify("Password updated", "Use your new password the next time you sign in.");
             }
             return RedirectToAction(nameof(Studio));
         }
@@ -896,12 +909,65 @@ namespace VibeShootAdmin.Controllers
                 account.PasswordHash = new PasswordHasher<AdminAccount>().HashPassword(account, password);
                 _context.Admins.Add(account);
                 await _context.SaveChangesAsync();
-                TempData["Toast"] = $"Account \"{username}\" created.";
+                Notify("Account created", $"\"{username}\" can now sign in. Share the password with them privately.");
             }
             return RedirectToAction(nameof(Studio));
         }
 
+        // ------------------------------------------------------------------ Reviews
+
+        [HttpGet]
+        public async Task<IActionResult> Reviews(int? photographerId, int page = 1)
+        {
+            var pid = User.EffectivePhotographerId(photographerId);
+            ViewBag.SelectedPhotographerId = pid;
+
+            var query = _context.Reviews.Include(r => r.Photographer)
+                .Where(r => pid == null || r.PhotographerId == pid);
+            var visible = query.Where(r => !r.IsHidden);
+
+            var model = new ReviewsAdminViewModel
+            {
+                Total = await query.CountAsync(),
+                Average = await visible.AverageAsync(r => (double?)r.Rating) ?? 0,
+                Breakdown = await visible.GroupBy(r => r.Rating).ToDictionaryAsync(g => g.Key, g => g.Count()),
+                Items = await query.OrderByDescending(r => r.CreatedAt)
+                    .Skip((Math.Max(1, page) - 1) * PageSize).Take(PageSize).ToListAsync(),
+                Page = page,
+            };
+            model.TotalPages = Math.Max(1, (int)Math.Ceiling(model.Total / (double)PageSize));
+            model.TopTags = (await visible.Select(r => r.Tags).ToListAsync())
+                .SelectMany(t => t.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                .GroupBy(t => t).OrderByDescending(g => g.Count()).Take(8)
+                .Select(g => new KeyValuePair<string, int>(g.Key, g.Count())).ToList();
+            return View("~/Views/Admin/Reviews.cshtml", model);
+        }
+
+        /// <summary>Hide or show a review on the public site. Super Admin only (photographers can't hide their own reviews).</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleReviewHidden(int id)
+        {
+            if (!User.IsSuperAdmin()) return Forbid();
+            var review = await _context.Reviews.FindAsync(id);
+            if (review == null) return NotFound();
+
+            review.IsHidden = !review.IsHidden;
+            await _context.SaveChangesAsync();
+            Notify(review.IsHidden ? "Review hidden" : "Review visible again",
+                review.IsHidden ? "It no longer appears on the public site or counts toward the rating." : "It's back on the public site.", "info");
+            return RedirectToAction(nameof(Reviews), new { photographerId = Request.Query["photographerId"].ToString() is { Length: > 0 } q ? q : null });
+        }
+
         // ------------------------------------------------------------------ Helpers
+
+        /// <summary>Shows a pop-up notification on the next page.</summary>
+        private void Notify(string title, string message, string variant = "success")
+        {
+            TempData["NoticeTitle"] = title;
+            TempData["NoticeMessage"] = message;
+            TempData["NoticeVariant"] = variant;
+        }
 
         /// <summary>Returns an error message for an invalid discount, or null if it is fine (or empty).</summary>
         private static string? ValidateDiscount(string? type, decimal value, DateTime? start, DateTime? end, decimal price, bool requireType = false)

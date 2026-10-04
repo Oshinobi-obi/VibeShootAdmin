@@ -129,7 +129,9 @@
                                 <div class="row-actions">
                                     @if (p.Status == PaymentStatus.ForVerification)
                                     {
-                                        <form autocomplete="off" class="inline-form" method="post" asp-action="VerifyPayment">
+                                        <form autocomplete="off" class="inline-form" method="post" asp-action="VerifyPayment"
+                                              data-confirm-title="Verify this payment?" data-confirm-ok="Yes, verify"
+                                              data-confirm="Only verify if you can see @Ui.Peso(p.Amount) from @p.Booking?.ClientName with reference @(p.ReferenceNumber ?? "(none)") in your GCash history. This can't be undone.">
                                             <input type="hidden" name="id" value="@p.Id" /><input type="hidden" name="returnUrl" value="@here" />
                                             <button class="btn btn-sm btn-green" title="Verify"><svg><use href="#i-check" /></svg>Verify</button>
                                         </form>

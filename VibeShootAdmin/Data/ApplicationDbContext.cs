@@ -17,6 +17,7 @@ namespace VibeShootAdmin.Data
         public DbSet<Admin> Admins { get; set; }
         public DbSet<BlockedDate> BlockedDates { get; set; }
         public DbSet<MediaFile> MediaFiles { get; set; }
+        public DbSet<Review> Reviews { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -59,6 +60,14 @@ namespace VibeShootAdmin.Data
                 e.HasIndex(g => new { g.PhotographerId, g.Category });
                 e.HasIndex(g => g.FilePath).IsUnique();
                 e.HasOne(g => g.Photographer).WithMany(p => p.GalleryImages).HasForeignKey(g => g.PhotographerId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<Review>(e =>
+            {
+                e.HasIndex(r => r.BookingTransactionId).IsUnique();          // one review per booking
+                e.HasIndex(r => new { r.PhotographerId, r.IsHidden, r.CreatedAt });
+                e.HasOne(r => r.Photographer).WithMany().HasForeignKey(r => r.PhotographerId).OnDelete(DeleteBehavior.Cascade);
+                e.HasOne(r => r.Booking).WithMany().HasForeignKey(r => r.BookingTransactionId).OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<MediaFile>(e =>
