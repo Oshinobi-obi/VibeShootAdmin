@@ -18,6 +18,7 @@ namespace VibeShootAdmin.Data
         public DbSet<BlockedDate> BlockedDates { get; set; }
         public DbSet<MediaFile> MediaFiles { get; set; }
         public DbSet<Review> Reviews { get; set; }
+        public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -68,6 +69,12 @@ namespace VibeShootAdmin.Data
                 e.HasIndex(r => new { r.PhotographerId, r.IsHidden, r.CreatedAt });
                 e.HasOne(r => r.Photographer).WithMany().HasForeignKey(r => r.PhotographerId).OnDelete(DeleteBehavior.Cascade);
                 e.HasOne(r => r.Booking).WithMany().HasForeignKey(r => r.BookingTransactionId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<DataProtectionKey>(e =>
+            {
+                e.HasIndex(k => k.App);
+                e.Property(k => k.Xml).HasColumnType("longtext");
             });
 
             modelBuilder.Entity<MediaFile>(e =>

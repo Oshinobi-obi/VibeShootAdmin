@@ -12,8 +12,14 @@ var site = builder.Configuration.GetSection("Site").Get<SiteOptions>() ?? new Si
 site.Resolve();
 builder.Services.AddSingleton(site);
 
+// HTTPS: redirect http:// to https://, send HSTS and mark cookies Secure. Controlled by "Https:Enabled".
+var httpsEnabled = builder.Configuration.GetValue<bool>("Https:Enabled");
+var cookieSecurity = httpsEnabled ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
+
 builder.Services.AddControllersWithViews();
+builder.Services.AddAntiforgery(o => o.Cookie.SecurePolicy = cookieSecurity);
 builder.Services.AddScoped<MediaStore>();
+builder.Services.AddDatabaseDataProtection("VibeShootAdmin");   // sign-ins/forms survive restarts
 builder.Services.AddVibeShootRateLimits();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -26,6 +32,7 @@ builder.Services.AddAuthentication("VibeShootAdminCookie")
         options.Cookie.Name = "VibeShootAdmin.Auth";
         options.Cookie.HttpOnly = true;                       // page scripts can't read it
         options.Cookie.SameSite = SameSiteMode.Lax;           // not sent with form posts from other sites
+        options.Cookie.SecurePolicy = cookieSecurity;         // only ever sent over HTTPS in production
         options.SlidingExpiration = true;
         options.LoginPath = "/Admin/Login";
         options.AccessDeniedPath = "/Admin/Login";
@@ -55,14 +62,21 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// HTTPS is off until the sites have SSL certificates. Set "Https:Enabled": true in appsettings to turn it back on.
-var httpsEnabled = app.Configuration.GetValue<bool>("Https:Enabled");
-
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     if (httpsEnabled) app.UseHsts();
 }
+
+// If the host's SSL sits in front of the app and forwards plain HTTP, honour its "was HTTPS" header so the
+// redirect below doesn't loop. Only the scheme is trusted (not X-Forwarded-For), so rate limits can't be dodged.
+var forwarded = new Microsoft.AspNetCore.Builder.ForwardedHeadersOptions
+{
+    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto,
+};
+forwarded.KnownIPNetworks.Clear();
+forwarded.KnownProxies.Clear();
+app.UseForwardedHeaders(forwarded);
 
 if (httpsEnabled) app.UseHttpsRedirection();
 app.UseSecurityHeaders();
